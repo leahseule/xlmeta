@@ -12,6 +12,7 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 
 from . import formula as F
 from . import explain as X
+from . import fingerprint as FP
 from .layout import analyze_sheet
 
 
@@ -198,15 +199,21 @@ def _link(metrics):
         m.setdefault("used_by", [])
 
 
-def extract(path):
+def extract(path, approvals=None):
     book = Book(path)
     metrics, cell_graph, unsupported = build_metrics(book)
+    approvals = approvals or {}
 
-    # 사람·AI가 읽을 지식으로 옮긴다 (한글 해석 · 함수 설명 · Python)
+    # 사람·AI가 읽을 지식 + 정의 지문 + 승인 상태
     for m in metrics:
         m["explanation"] = X.explain_metric(m)
         m["python"] = X.pythonize(m)
         m["functions_doc"] = X.functions_doc(m["functions"])
+        m["fingerprint"] = FP.fingerprint(m)
+        m["canonical"] = FP.canonical(m)
+        info = approvals.get(m["fingerprint"])
+        m["status"] = "approved" if info else "pending"   # 기본값은 pending(안 씀)
+        m["approval"] = info
 
     sources = []
     for sheet, regs in book.layout.items():

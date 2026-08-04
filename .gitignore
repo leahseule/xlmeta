@@ -16,6 +16,10 @@ sample_epc_cost.xlsx
 # 단, 데모 번들(demo/)은 예시 결과물로 커밋한다
 !demo/
 
+# 승인 저장소는 인스턴스 상태(누가 뭘 승인했는지) — 기본 파일은 커밋 안 함
+# (demo.approvals.json은 데모용으로 커밋)
+xlmeta.approvals.json
+
 # OS / 편집기
 .DS_Store
 Thumbs.db
