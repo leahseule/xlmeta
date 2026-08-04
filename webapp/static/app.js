@@ -202,8 +202,11 @@ function renderGrid(sheet) {
     row.forEach((cell, ci) => {
       const g = cell.g === null ? "" : ` data-g="${cell.g}"`;
       const disp = (cell.cv !== undefined && cell.cv !== null) ? cell.cv : cell.v;
-      const title = cell.v ? ` title="${esc(cell.v)}"` : "";
-      body += `<td class="role-${cell.r} t-${cell.t}" data-r="${ri + 1}" data-c="${ci + 1}"${g}${title}>${esc(disp)}</td>`;
+      const isTitle = cell.title_of != null;
+      const ttl = isTitle ? `표 제목으로 추측된 칸 — ${cell.v || ""}` : (cell.v || "");
+      const title = ttl ? ` title="${esc(ttl)}"` : "";
+      const cls = `role-${cell.r} t-${cell.t}${isTitle ? " is-title" : ""}`;
+      body += `<td class="${cls}" data-r="${ri + 1}" data-c="${ci + 1}"${g}${title}>${esc(disp)}</td>`;
     });
     body += `</tr>`;
   });
@@ -436,6 +439,7 @@ function interpRegion(sheet, reg) {
     `</tbody></table>`, "");
 
   const meta = [];
+  if (reg.title_cell) meta.push(`<span class="pill">제목 칸 · ${esc(reg.title_cell)} <span class="pill-note">(추측)</span></span>`);
   if (reg.key_cols.length) meta.push(`<span class="pill">행 식별 · ${reg.key_cols.map(esc).join(", ")}</span>`);
   if (reg.header_rows.length) meta.push(`<span class="pill">머리글 행 · ${reg.header_rows.join(", ")}</span>`);
   if (reg.subtotal_rows.length) meta.push(`<span class="pill warn">소계 행 · ${reg.subtotal_rows.join(", ")}</span>`);
@@ -674,13 +678,28 @@ function rulesBlk(rules) {
   return blk("숨은 규칙 · 수식에만 있는 조건",
     `<ul class="blk-list">${rules.map((c) => `<li>${condPhrase(c)} 것만 포함</li>`).join("")}</ul>`, "card");
 }
-function refsBlk(m) {
+// 지표의 각 행은 같은 패턴(행만 이동)이라, 보고 있는 행에 맞춰 참조 행을 옮긴다.
+// reads는 앵커(맨 윗 행) 기준으로 저장돼 있어, 그대로 쓰면 어느 행을 봐도 앵커 참조가 나온다.
+function readsForRow(m, r) {
+  const anchorRow = +(/(\d+)/.exec((m.anchor_cell || "").split("!").pop()) || [])[1];
+  if (!anchorRow || !r || r === anchorRow) return m.reads;
+  const d = r - anchorRow;
+  return m.reads.map((rd) => {
+    const [sh, a1] = rd.ref.split("!");
+    // 절대행($6)과 행 없는 범위(G:G)는 고정, 상대 행 참조만 이동
+    const shifted = a1.replace(/(\$?)([A-Z]{1,3})(\$?)(\d+)/g,
+      (mm, dc, col, dr, row) => dr ? mm : `${dc}${col}${(+row) + d}`);
+    return Object.assign({}, rd, { ref: `${sh}!${shifted}` });
+  });
+}
+
+function refsBlk(m, r) {
   const seen = new Set(), rows = [];
-  m.reads.forEach((r) => {
-    if (seen.has(r.ref)) return;
-    seen.add(r.ref);
-    const [sh, a1] = r.ref.split("!");
-    rows.push({ ref: r.ref, sheet: sh, a1, name: r.name });
+  readsForRow(m, r).forEach((rd) => {
+    if (seen.has(rd.ref)) return;
+    seen.add(rd.ref);
+    const [sh, a1] = rd.ref.split("!");
+    rows.push({ ref: rd.ref, sheet: sh, a1, name: rd.name });
   });
   if (!rows.length) return "";
   return blk("참조하는 셀",
@@ -876,8 +895,12 @@ function interpCell(sheet, r, c, metricId) {
   const keys = m ? m.conditions.filter((cc) => cc.kind === "match_key") : [];
   const override = m ? m.manual_overrides.find((o) => o.cell === fullRef) : null;
 
-  const title = m ? (m.title || m.id) : ((reg && reg.columns[colL]) || `${colL}열`);
-  const tag = override ? `<span class="tag warn">수기 입력</span>`
+  const titleReg = (cell.title_of != null) ? sheet.regions[cell.title_of] : null;
+  const title = m ? (m.title || m.id)
+              : titleReg ? (titleReg.title || raw)
+              : ((reg && reg.columns[colL]) || `${colL}열`);
+  const tag = titleReg ? `<span class="tag">표 제목</span>`
+            : override ? `<span class="tag warn">수기 입력</span>`
             : (m || isFormula) ? `<span class="tag ok">자동 계산</span>`
             : `<span class="tag">직접 입력</span>`;
   const addr = `<button class="addr-btn" data-focus-sheet="${esc(sheet.name)}" data-focus-r="${r}" data-focus-c="${c}" data-focus-metric="${esc(metricId || "")}" title="이 셀로 돌아가기">${esc(sheet.name)} 시트 · ${esc(cellRef)}</button>`;
@@ -895,6 +918,14 @@ function interpCell(sheet, r, c, metricId) {
   else if (!isFormula) vb += `<p class="vd-manual">직접 입력된 값이에요 (수식 아님).</p>`;
   h += blk("이 칸의 값", vb, "card");
 
+  // 표 제목으로 추측된 칸이면 그 사실 + 대상 표 링크
+  if (titleReg) {
+    h += blk("이 칸의 쓰임",
+      `<p class="blk-lead">이 칸은 아래 표의 <b>제목으로 추측</b>돼요. 단독으로 떠 있는 텍스트라 데이터가 아니라 표 이름으로 판단했어요.</p>`
+      + `<div class="collink"><span class="chip link" data-region="${titleReg.id}">‘${esc(titleReg.title || titleReg.a1.split("!")[1])}’ 표 보기</span></div>`,
+      "card");
+  }
+
   // 2) 이 값은 어느 행의 것인지
   h += rowIdentityBlk(sheet, reg, r, metricId || "");
 
@@ -911,9 +942,9 @@ function interpCell(sheet, r, c, metricId) {
     h += blk("계산 방식", inner, "card");
   }
 
-  // 4) 계산 값이면 참조 · 흐름까지
+  // 4) 계산 값이면 참조 · 흐름까지 (참조는 '보고 있는 행' 기준으로)
   if (m) {
-    h += refsBlk(m);
+    h += refsBlk(m, r);
     h += flowBlk(m);
     h += devBlk(m);
     h += colLinkBlk(m);

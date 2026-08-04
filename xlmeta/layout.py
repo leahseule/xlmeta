@@ -61,6 +61,7 @@ class Region:
     row_labels: dict = field(default_factory=dict)  # row → "울산 정유"
     subtotal_rows: list = field(default_factory=list)
     title: str = None
+    title_cell: tuple = None        # (row, col) — 제목으로 추측한 셀
     confidence: str = "low"
 
     @property
@@ -234,6 +235,7 @@ def absorb_title_row(ws, reg, tmap):
             v = ws.cell(row=reg.r0, column=c).value
             if isinstance(v, str):
                 reg.title = v.strip()
+                reg.title_cell = (reg.r0, c)
             reg.r0 += 1
         else:
             break
@@ -248,7 +250,7 @@ def detect_title(ws, reg, tmap, regions):
     for o in regions:
         if o is not reg:
             occupied.update(range(o.r0, o.r1 + 1))
-    best, best_score = None, -1
+    best, best_score, best_cell = None, -1, None
     for r in range(reg.r0 - 1, max(0, reg.r0 - 4), -1):
         if r < 1 or r in occupied:
             continue
@@ -264,7 +266,9 @@ def detect_title(ws, reg, tmap, regions):
         f = cell.font
         score = (2 if f and f.bold else 0) + (f.size or 11) / 11.0
         if score > best_score:
-            best, best_score = cell.value.strip(), score
+            best, best_score, best_cell = cell.value.strip(), score, (r, c)
+    if best_cell:
+        reg.title_cell = best_cell
     return best
 
 

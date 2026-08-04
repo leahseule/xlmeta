@@ -54,7 +54,7 @@ def write_bundle(meta, outdir):
         name = s["title"] or f"{s['sheet']} {s['range'].split('!')[1]}"
         fn = slug(name)
         source_files.append((fn, name, s))
-        fm = frontmatter({
+        fmd = {
             "type": "Spreadsheet Table",
             "title": name,
             "description": f"{src}의 {s['range']} 영역 ({s['row_count']}행)",
@@ -62,8 +62,14 @@ def write_bundle(meta, outdir):
             "timestamp": now,
             "layout_confidence": s["layout_confidence"],
             "key_columns": s["key_columns"],
-        })
-        body = ["", "# Schema", "", "| 열 | 이름 |", "|---|---|"]
+        }
+        if s.get("title_cell"):
+            fmd["title_cell"] = f"{s['sheet']}!{s['title_cell']}"
+        fm = frontmatter(fmd)
+        body = [""]
+        if s.get("title_cell"):
+            body += [f"> 제목 셀(추측): `{s['sheet']}!{s['title_cell']}` — 단독 텍스트라 데이터가 아니라 표 이름으로 판단.", ""]
+        body += ["# Schema", "", "| 열 | 이름 |", "|---|---|"]
         for col, nm in s["columns"].items():
             body.append(f"| `{col}` | {nm} |")
         if s["subtotal_rows"]:

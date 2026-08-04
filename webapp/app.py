@@ -113,11 +113,14 @@ def build_structure(path):
 
         reg_out = []
         for i, reg in enumerate(regions):
+            tcell = (f"{get_column_letter(reg.title_cell[1])}{reg.title_cell[0]}"
+                     if reg.title_cell else None)
             reg_out.append({
                 "id": i,
                 "a1": f"{ws.title}!{reg.a1}",
                 "r0": reg.r0, "r1": reg.r1, "c0": reg.c0, "c1": reg.c1,
                 "title": reg.title,
+                "title_cell": tcell,        # 제목으로 추측한 셀 (A1 표기)
                 "confidence": reg.confidence,
                 "header_rows": reg.header_rows,
                 "key_cols": [get_column_letter(c) for c in reg.key_cols],
@@ -126,6 +129,11 @@ def build_structure(path):
                             for c, p in reg.col_paths.items()},
                 "row_count": reg.r1 - reg.r0 + 1 - len(reg.header_rows),
             })
+            # 격자에서 그 제목 셀에 표식을 남긴다 (영역 밖 위쪽 셀일 수 있음)
+            if reg.title_cell:
+                tr, tc = reg.title_cell
+                if 1 <= tr <= H and 1 <= tc <= W:
+                    grid[tr - 1][tc - 1]["title_of"] = i
 
         refs = set()
         for row in ws.iter_rows():

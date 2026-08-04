@@ -222,6 +222,8 @@ def extract(path, approvals=None):
                 "sheet": sheet,
                 "range": f"{sheet}!{reg.a1}",
                 "title": reg.title,
+                "title_cell": (f"{get_column_letter(reg.title_cell[1])}{reg.title_cell[0]}"
+                               if reg.title_cell else None),
                 "columns": {get_column_letter(c): " > ".join(p)
                             for c, p in reg.col_paths.items()},
                 "key_columns": [get_column_letter(c) for c in reg.key_cols],
