@@ -150,8 +150,32 @@ def build_col_paths(ws, reg, mlk):
 
 # ── 5. 행머리글 열 ──────────────────────────────────────────────
 
-def detect_key_cols(reg, tmap):
-    """데이터 영역에서 텍스트가 지배적인 좌측 열들 = 행 식별자."""
+def _is_id_column(ws, mlk, body, c):
+    """숫자 열인데 값이 대부분 고유하면 ID/식별자로 본다.
+       (금액·수량 같은 '집계형 데이터 숫자'는 값이 겹치므로 여기서 걸러진다.)"""
+    nums = []
+    for r in body:
+        v = val(ws, mlk, r, c)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            nums.append(v)
+    return len(nums) >= 2 and len(set(nums)) / len(nums) >= 0.9
+
+
+def _short_text_col(ws, mlk, body, c, limit=16):
+    """텍스트 열의 대푯값 길이가 짧으면 식별자(코드·명칭·범주),
+       길면 내용(설명·비고)으로 본다. 중앙값으로 판단."""
+    lens = [len(v.strip()) for r in body
+            if isinstance(v := val(ws, mlk, r, c), str) and v.strip()]
+    if not lens:
+        return False
+    lens.sort()
+    return lens[len(lens) // 2] <= limit
+
+
+def detect_key_cols(reg, tmap, ws, mlk):
+    """행 식별 열 = 좌측의 식별자 열들.
+       - 맨 앞 숫자 ID 열(고유값)도 인정한다 (예: 프로세스맵의 ID)
+       - 텍스트 열은 짧은 식별자만 인정하고, 긴 설명 열이 나오면 멈춘다."""
     keys = []
     body = [r for r in range(reg.r0, reg.r1 + 1) if r not in reg.header_rows]
     for c in range(reg.c0, reg.c1 + 1):
@@ -160,9 +184,15 @@ def detect_key_cols(reg, tmap):
         if not nonempty:
             continue
         if types.count("t") / len(nonempty) >= 0.6:
-            keys.append(c)
+            # 첫 식별 열은 무조건, 이후 텍스트 열은 '짧을 때만' 식별자로 인정
+            if not keys or _short_text_col(ws, mlk, body, c):
+                keys.append(c)
+            else:
+                break      # 긴 텍스트 = 내용 → 여기부터는 식별 열 아님
+        elif not keys and _is_id_column(ws, mlk, body, c):
+            keys.append(c)      # 맨 왼쪽 숫자 ID 열
         else:
-            break          # 좌측 연속 구간만 인정
+            break          # 집계형 숫자 데이터나 그 오른쪽 → 멈춤
     return keys
 
 
@@ -249,7 +279,7 @@ def analyze_sheet(ws):
         absorb_title_row(ws, reg, tmap)
         reg.header_rows = detect_header_band(ws, reg, tmap, mlk)
         reg.col_paths = build_col_paths(ws, reg, mlk)
-        reg.key_cols = detect_key_cols(reg, tmap)
+        reg.key_cols = detect_key_cols(reg, tmap, ws, mlk)
         reg.subtotal_rows = detect_subtotals(ws, reg, tmap, mlk)
         reg.title = detect_title(ws, reg, tmap, regions)
         for r in range(reg.r0, reg.r1 + 1):
