@@ -70,7 +70,7 @@ def build_metrics(book):
         # 셀 단위 원장은 영역과 무관하게 전부 기록
         for row in ws.iter_rows():
             for c in row:
-                if isinstance(c.value, str) and c.value.startswith("="):
+                if c.data_type == "f":               # 진짜 수식만 (아포스트로피 텍스트 제외)
                     body = c.value[1:]
                     cell_graph[f"{sheet}!{c.coordinate}"] = {
                         "formula": c.value,
@@ -90,9 +90,9 @@ def build_metrics(book):
             blocks = defaultdict(list)
             for r in data_rows:
                 for c in range(reg.c0, reg.c1 + 1):
-                    v = ws.cell(row=r, column=c).value
-                    if isinstance(v, str) and v.startswith("="):
-                        blocks[(c, F.normalize(v[1:], r))].append(r)
+                    cell = ws.cell(row=r, column=c)
+                    if cell.data_type == "f":
+                        blocks[(c, F.normalize(cell.value[1:], r))].append(r)
 
             for (c, pattern), rows in sorted(blocks.items(), key=lambda x: (x[0][0], min(x[1]))):
                 rows.sort()
@@ -120,8 +120,9 @@ def build_metrics(book):
                 for r in data_rows:
                     if r < rows[0] or r > rows[-1]:
                         continue
-                    v = ws.cell(row=r, column=c).value
-                    if v is not None and not (isinstance(v, str) and v.startswith("=")):
+                    oc = ws.cell(row=r, column=c)
+                    v = oc.value
+                    if v is not None and oc.data_type != "f":   # 값은 있는데 수식이 아님
                         manual.append({
                             "cell": f"{sheet}!{get_column_letter(c)}{r}",
                             "row_label": reg.row_labels.get(r),

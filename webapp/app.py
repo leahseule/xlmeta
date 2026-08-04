@@ -93,15 +93,17 @@ def build_structure(path):
         for r in range(1, H + 1):
             row = []
             for c in range(1, W + 1):
-                v = ws.cell(row=r, column=c).value
+                oc = ws.cell(row=r, column=c)
+                v = oc.value
+                is_f = oc.data_type == "f"           # 진짜 수식 여부
                 gi, reg = region_at(r, c)
                 cell = {
                     "v": _cell_display(v),
-                    "t": cell_type(v),
+                    "t": cell_type(v, is_f),
                     "r": _role_of(reg, r, c) if reg else "out",
                     "g": gi,
                 }
-                if isinstance(v, str) and v.startswith("="):
+                if is_f:
                     cv = ev.value(ws.title, r, c)
                     if cv is None:                         # 캐시값으로 대체
                         cv = wbv[ws.title].cell(row=r, column=c).value
@@ -128,7 +130,7 @@ def build_structure(path):
         refs = set()
         for row in ws.iter_rows():
             for cell in row:
-                if isinstance(cell.value, str) and cell.value.startswith("="):
+                if cell.data_type == "f":
                     for s, _a in F.refs_in(cell.value[1:], ws.title):
                         if s != ws.title:
                             refs.add(s)

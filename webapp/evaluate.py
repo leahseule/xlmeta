@@ -62,12 +62,13 @@ class Evaluator:
             return self.cache[key]
         self.cache[key] = None                      # 순환 참조 방어
         try:
-            v = self.wb[sheet].cell(row=r, column=c).value
+            cell = self.wb[sheet].cell(row=r, column=c)
         except Exception:
             return None
-        if isinstance(v, str) and v.startswith("="):
+        v = cell.value
+        if cell.data_type == "f":                   # 진짜 수식만 계산 (텍스트 '=..'는 그대로)
             try:
-                v = self._expr(v[1:], sheet)
+                v = self._expr(str(v)[1:], sheet)
             except Exception:
                 v = None
         self.cache[key] = v

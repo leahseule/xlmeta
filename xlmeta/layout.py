@@ -24,22 +24,30 @@ SUBTOTAL_EXACT = ("계", "합", "sum")
 
 # ── 1. 유형 지도 ────────────────────────────────────────────────
 
-def cell_type(v):
+def cell_type(v, is_formula=False):
+    # 수식 여부는 값이 '='로 시작하는지가 아니라 openpyxl data_type('f')로 판별한다.
+    # ('=SUM(..)' 같은 아포스트로피 텍스트는 수식이 아니라 텍스트다.)
+    if is_formula:
+        return "f"
     if v is None or (isinstance(v, str) and not v.strip()):
         return "."          # 빈칸
-    if isinstance(v, str) and v.startswith("="):
-        return "f"          # 수식
     if isinstance(v, bool):
         return "b"
     if isinstance(v, (int, float)):
         return "n"          # 숫자
-    return "t"              # 텍스트
+    return "t"              # 텍스트 ('='로 시작해도 수식이 아니면 텍스트)
 
 
 def type_map(ws):
     h, w = ws.max_row, ws.max_column
-    return [[cell_type(ws.cell(row=r, column=c).value)
-             for c in range(1, w + 1)] for r in range(1, h + 1)], h, w
+    rows = []
+    for r in range(1, h + 1):
+        row = []
+        for c in range(1, w + 1):
+            cell = ws.cell(row=r, column=c)
+            row.append(cell_type(cell.value, cell.data_type == "f"))
+        rows.append(row)
+    return rows, h, w
 
 
 # ── 2. 영역 탐지 ────────────────────────────────────────────────
@@ -174,8 +182,9 @@ def detect_subtotals(ws, reg, tmap, mlk):
         if any(w in lbl for w in SUBTOTAL_WORDS) or lbl in SUBTOTAL_EXACT:
             subs.append(r); continue
         for c in range(reg.c0, reg.c1 + 1):
-            v = ws.cell(row=r, column=c).value
-            if isinstance(v, str) and v.startswith("="):
+            cell = ws.cell(row=r, column=c)
+            if cell.data_type == "f":
+                v = cell.value
                 m = re.search(r"SUM\(\s*\$?[A-Z]{1,3}\$?(\d+)\s*:\s*\$?[A-Z]{1,3}\$?(\d+)\)",
                               v, re.I)
                 if m and int(m.group(2)) < r and int(m.group(1)) >= reg.r0:

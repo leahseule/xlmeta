@@ -863,7 +863,7 @@ function interpCell(sheet, r, c, metricId) {
   const fullRef = `${sheet.name}!${cellRef}`;
   const cell = (sheet.cells[r - 1] && sheet.cells[r - 1][c - 1]) || {};
   const raw = String(cell.v || "");
-  const isFormula = raw.startsWith("=");
+  const isFormula = cell.t === "f";   // 값이 '='로 시작해도 텍스트일 수 있음 (백엔드 유형 사용)
   const reg = m ? sheet.regions.find((rg) => rg.a1 === m.region)
                 : sheet.regions.find((rg) => rg.r0 <= r && r <= rg.r1 && rg.c0 <= c && c <= rg.c1);
   const rules = m ? m.conditions.filter((cc) => cc.kind === "business_rule") : [];
