@@ -214,9 +214,15 @@ function renderGrid(sheet) {
     if (!td) return;
     const r = +td.dataset.r, c = +td.dataset.c;
     if (td.dataset.metric) return selectCell(r, c, td.dataset.metric);
-    if (td.classList.contains("role-header"))
-      return td.hasAttribute("data-g") ? select("region", td.dataset.g) : select("overview");
-    if (td.hasAttribute("data-g")) return selectCell(r, c, null);   // 입력 값 칸도 클릭 가능
+    // 진짜 표(데이터 행이 있는 영역)의 머리글만 표 구조 보기로. 그 외엔 칸 내용.
+    if (td.classList.contains("role-header") && td.hasAttribute("data-g")) {
+      const reg = sheet.regions[+td.dataset.g];
+      if (reg && reg.row_count > 0) return select("region", td.dataset.g);
+    }
+    // 어떤 칸이든 내용이 있으면 그 칸에 뭐가 들었는지 보여준다 (표가 아니어도)
+    const co = (sheet.cells[r - 1] || [])[c - 1];
+    if (co && co.v !== "" && co.v !== null && co.v !== undefined)
+      return selectCell(r, c, null);
     select("overview");
   };
 }
@@ -880,8 +886,10 @@ function interpCell(sheet, r, c, metricId) {
   // 1) 이 칸의 값
   const shownVal = String(override ? fmtNum(override.value)
     : ((cell.cv !== undefined && cell.cv !== null) ? cell.cv : raw));
-  const copyVal = /^[\d,.\-]+$/.test(shownVal) ? shownVal.replace(/,/g, "") : shownVal;
-  let vb = `<div class="cval-row"><span class="cell-value">${esc(shownVal || "(빈 칸)")}</span>`
+  const isNumeric = /^[\d,.\-]+$/.test(shownVal);
+  const copyVal = isNumeric ? shownVal.replace(/,/g, "") : shownVal;
+  const longText = !isNumeric && shownVal.length > 24;   // 긴 글은 큰 숫자체 대신 읽기체
+  let vb = `<div class="cval-row${longText ? " tall" : ""}"><span class="cell-value${longText ? " text" : ""}">${esc(shownVal || "(빈 칸)")}</span>`
     + `<button class="copy-btn" data-copy="${esc(copyVal)}" title="값 복사">복사</button></div>`;
   if (override) vb += `<p class="vd-manual">사람이 직접 넣은 값이에요. 수식으로 자동 계산된 게 아니에요.</p>`;
   else if (!isFormula) vb += `<p class="vd-manual">직접 입력된 값이에요 (수식 아님).</p>`;

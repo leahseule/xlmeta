@@ -299,8 +299,12 @@ table.grid td code, .ref { font-family: var(--mono); font-size: 13px; background
   background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
   padding: 9px 12px; margin: 0; overflow-x: auto; white-space: pre; }
 .cval-row { display: flex; align-items: center; gap: 12px; margin: 0; flex-wrap: wrap; }
+.cval-row.tall { align-items: flex-start; }
 .cell-value { font-family: var(--mono); font-size: 26px; font-weight: 700;
   letter-spacing: -.5px; color: var(--ink); margin: 0; }
+/* 긴 글 값(설명·문장): 큰 숫자체 대신 읽기 좋은 본문체로 */
+.cell-value.text { font-family: var(--sans); font-size: 15px; font-weight: 500;
+  letter-spacing: 0; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
 /* 값 아래: 계산식(크게·복사) · 쉬운 설명(간격 두고) */
 .val-detail { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .vd-k { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
