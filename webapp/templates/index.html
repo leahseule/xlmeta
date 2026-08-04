@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xlmeta — 엑셀을 있는 그대로 두고 구조만 꺼내 봅니다</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">▦</span><span class="name">xlmeta</span></div>
+    <p id="topTag" class="tagline"><b>있는 그대로</b>의 엑셀 &nbsp;↔&nbsp; <b>읽어낸 구조</b>를 나란히</p>
+    <div id="topResults" class="topresults hidden">
+      <span class="srcfile" id="srcFile"></span>
+      <button id="resetBtn" class="btn ghost">다시 분석</button>
+    </div>
+  </header>
+
+  <!-- 시작 화면 -->
+  <main id="landing" class="landing">
+    <h1 class="hero-title">복잡한 엑셀을 <span class="hl">있는 그대로</span> 두고,<br>
+      그 안의 <span class="hl">숨은 구조</span>만 나란히 꺼내 봅니다</h1>
+    <p class="hero-sub">
+      표가 어디부터 어딘지, 어떤 규칙이 수식에 박혀 있는지, 사람이 손댄 칸은 어딘지 —
+      원본과 대조하며 한눈에 확인하세요.
+    </p>
+    <div class="actions">
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="fileInput" accept=".xlsx,.xlsm" hidden>
+        <div class="dz-icon">＋</div>
+        <p class="dz-main">엑셀 파일을 끌어다 놓거나 클릭</p>
+        <p class="dz-hint">.xlsx · .xlsm</p>
+      </div>
+      <button id="sampleBtn" class="btn big">샘플로 바로 보기</button>
+    </div>
+    <p class="hero-note">파일은 서버 임시폴더에서만 처리되고 저장되지 않습니다</p>
+  </main>
+
+  <!-- 로딩 -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <p id="loadingMsg">읽어내는 중…</p>
+  </div>
+
+  <!-- 결과: 영원한 대조 -->
+  <main id="results" class="duo hidden">
+    <section class="pane left">
+      <header class="pane-h">
+        <div class="pane-hl">
+          <span class="pane-title">원본</span>
+          <span class="pane-sub">엑셀에 있는 그대로</span>
+        </div>
+        <span class="sheetcount" id="sheetCount"></span>
+      </header>
+      <div class="sheetstrip" id="sheetTabs"></div>
+      <div class="gridscroll" id="gridScroll"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section class="pane right">
+      <header class="pane-h">
+        <span class="pane-title">해석</span>
+        <span class="pane-sub">xlmeta가 읽어낸 것</span>
+      </header>
+      <div class="interp" id="interp"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xlmeta"
+version = "0.1.0"
+description = "엑셀 수식에서 업무 지표 정의를 추출해 OKF 번들로 출력한다 (LLM 미사용)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+dependencies = ["openpyxl>=3.1"]
+
+[project.scripts]
+xlmeta = "xlmeta.__main__:main"
+
+[tool.setuptools]
+packages = ["xlmeta"]

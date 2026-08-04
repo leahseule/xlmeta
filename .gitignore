@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# 생성물 (make_sample.py로 언제든 재생성 가능)
+sample_epc_cost.xlsx
+*.xlsx
+
+# 단, 데모 번들(demo/)은 예시 결과물로 커밋한다
+!demo/
+
+# OS / 편집기
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
