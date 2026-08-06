@@ -235,6 +235,7 @@ def extract(path, approvals=None):
     return {
         "source_file": os.path.basename(path),
         "generated_by": "xlmeta 0.1 (no LLM)",
+        "sheets": [ws.title for ws in book.wbf.worksheets],
         "sources": sources,
         "metrics": metrics,
         "cell_graph": cell_graph,

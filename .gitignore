@@ -20,6 +20,9 @@ sample_epc_cost.xlsx
 # (demo.approvals.json은 데모용으로 커밋)
 xlmeta.approvals.json
 
+# 요약 공유 저장소 — 인스턴스 상태 (분석할 때마다 쌓임)
+webapp/instance/
+
 # OS / 편집기
 .DS_Store
 Thumbs.db

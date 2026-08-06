@@ -65,6 +65,14 @@ code, .mono { font-family: var(--mono); }
 .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn.ghost:hover { color: var(--ink); background: var(--bg); }
 
+/* AI에게 넘기기 */
+.ai-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+.ai-actions .btn { text-decoration: none; }
+.btn.ai { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.ai:hover { background: #333; border-color: #333; }
+.ai-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
+.blk-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
+
 /* ── 시작 화면 ── */
 .landing { max-width: 720px; margin: 0 auto; padding: 76px 24px; text-align: center;
   height: calc(100vh - 53px); overflow-y: auto; }

@@ -8,12 +8,15 @@ xlmeta webapp — 엑셀을 올리면 xlmeta가 뽑아낸 지표 정의(OKF 번�
     python webapp/app.py            # → http://127.0.0.1:5000
 """
 
+import hashlib
 import json
 import os
 import sys
 import tempfile
+from datetime import datetime, timezone
 
-from flask import Flask, Response, render_template, request
+from flask import Flask, Response, abort, render_template, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # 저장소 루트를 import 경로에 올려 xlmeta 패키지와 make_sample을 쓴다.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +29,7 @@ from openpyxl import load_workbook                 # noqa: E402
 from openpyxl.utils import get_column_letter        # noqa: E402
 
 from xlmeta import extract, write_bundle          # noqa: E402
+from xlmeta import summary as XS                    # noqa: E402
 from xlmeta.emit_okf import slug                   # noqa: E402
 from xlmeta.layout import analyze_sheet, cell_type  # noqa: E402
 from xlmeta import formula as F                     # noqa: E402
@@ -36,6 +40,30 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024   # 10MB 상한
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0            # 정적파일 캐시 끔(개발용)
 app.config["TEMPLATES_AUTO_RELOAD"] = True             # 템플릿 수정 즉시 반영
+
+# 배포: 리버스 프록시(Render/Fly 등) 뒤에서 https·실제 호스트를 인식해
+# request.host_url이 공개 주소로 나오게 한다. AI에게 넘길 링크가 여기서 나온다.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+# 요약 공유 저장소: 분석할 때마다 요약을 여기에 저장하고 /s/<id>로 서빙한다.
+# 인스턴스 상태라 배포 디스크가 휘발성이면 재시작 시 사라질 수 있다(데모 허용).
+STORE_DIR = os.environ.get("XLMETA_DATA_DIR", os.path.join(HERE, "instance", "summaries"))
+os.makedirs(STORE_DIR, exist_ok=True)
+
+
+def _save_summary(sid, payload):
+    with open(os.path.join(STORE_DIR, f"{sid}.json"), "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+
+
+def _load_summary(sid):
+    if not sid.isalnum():                                  # 경로 조작 차단
+        return None
+    path = os.path.join(STORE_DIR, f"{sid}.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
 @app.after_request
@@ -192,6 +220,26 @@ def analyze_path(xlsx_path):
     for s in meta["sources"]:
         s["md_key"] = _md_key_for_source(s)
 
+    # AI에게 넘길 요약(결정론적, 원시 값 제외)을 만들어 저장하고 링크·프리필을 만든다.
+    summ = XS.summarize(meta)
+    summ_md = XS.markdown(summ)
+    sid = hashlib.sha256(summ_md.encode("utf-8")).hexdigest()[:12]
+    _save_summary(sid, {
+        "source_file": summ["source_file"],
+        "summary": summ,
+        "markdown": summ_md,
+        "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    })
+    share_url = request.host_url.rstrip("/") + "/s/" + sid
+    share = {
+        "id": sid,
+        "path": "/s/" + sid,
+        "url": share_url,
+        "markdown": summ_md,
+        "prefill": XS.headline(summ, share_url),
+        "totals": summ["totals"],
+    }
+
     return {
         "source_file": meta["source_file"],
         "stats": {
@@ -206,6 +254,8 @@ def analyze_path(xlsx_path):
         "metrics": meta["metrics"],
         "unsupported": meta["unsupported"],
         "bundle_md": bundle_md,
+        "summary": summ,
+        "share": share,
     }
 
 
@@ -220,6 +270,15 @@ def json_response(payload, status=200):
 @app.get("/")
 def index():
     return render_template("index.html")
+
+
+@app.get("/s/<sid>")
+def share_page(sid):
+    """AI·사람이 읽을 공개 요약 페이지. 프리필 링크가 여기를 가리킨다."""
+    data = _load_summary(sid)
+    if not data:
+        abort(404)
+    return render_template("share.html", data=data, summary=data["summary"])
 
 
 @app.post("/api/sample")

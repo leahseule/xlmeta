@@ -397,11 +397,38 @@ function interpRef(sel, from) {
   return h;
 }
 
+function aiHandoffBlk() {
+  const s = DATA.share;
+  if (!s) return "";
+  const q = encodeURIComponent(s.prefill);
+  const claude = `https://claude.ai/new?q=${q}`;
+  const gpt = `https://chatgpt.com/?q=${q}`;
+  return blk("AI에게 넘기기",
+    `<p class="blk-lead">이 엑셀의 <b>구조·업무규칙 요약</b>을 만들었어요 (시트 ${s.totals.sheets}·표 ${s.totals.tables}·지표 ${s.totals.metrics}). 버튼을 누르면 그 요약 링크가 담긴 채 대화가 열려요.</p>
+     <div class="ai-actions">
+       <a class="btn ai" href="${claude}" target="_blank" rel="noopener">Claude에게 열기</a>
+       <a class="btn ai" href="${gpt}" target="_blank" rel="noopener">ChatGPT에게 열기</a>
+       <a class="btn ghost" href="${esc(s.path)}" target="_blank" rel="noopener">요약 페이지 보기</a>
+     </div>
+     <div class="ai-links">
+       <button class="chip link" data-copy="${esc(s.prefill)}">프리필 문구 복사</button>
+       <button class="chip link" data-copy="${esc(s.url)}">링크만 복사</button>
+     </div>
+     <p class="blk-note">요약은 주소가 아니라 <b>링크가 가리키는 페이지</b>에 담겨요(URL이 길어지지 않음). AI가 읽으려면 링크가 <b>공개 주소</b>여야 해요 — 배포하면 동작해요.</p>`,
+    "card");
+}
+
 function interpOverview(sheet) {
   const nCalc = DATA.metrics.filter((m) => m.sheet === sheet.name && m.md_key).length;
   const nFormula = sheet.cells.flat().filter((c) => c.t === "f").length;
   let h = ihead(scopePill("시트"), sheet.name,
     `표 ${sheet.regions.length}개 · 계산 값 ${nCalc}개 · 수식 셀 ${nFormula}개`);
+
+  // 이 시트는 무엇을 관리하는 문서인지 — 결정론적 한 문단
+  const card = (DATA.summary && DATA.summary.sheets || []).find((c) => c.sheet === sheet.name);
+  if (card && card.paragraph) h += blk("이 시트는", `<p class="blk-lead">${esc(card.paragraph)}</p>`, "card");
+
+  h += aiHandoffBlk();
 
   if (sheet.regions.length) {
     const rows = sheet.regions.map((reg) => {
