@@ -1,4 +1,4 @@
-# 배포 — Docker + AWS EC2
+﻿# 배포 — Docker + AWS EC2
 
 xlmeta 웹 데모를 컨테이너로 EC2에 올려 운영하는 법. AI에게 넘길
 요약 링크(`/s/<id>`)가 **공개 주소**여야 ChatGPT·Claude가 읽을 수 있으므로,
