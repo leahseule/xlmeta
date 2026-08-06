@@ -18,13 +18,13 @@
 
   <!-- 시작 화면 -->
   <main id="landing" class="landing">
-    <h1 class="hero-title">복잡한 엑셀을 <span class="hl">있는 그대로</span> 두고,<br>
+    <h1 class="hero-title reveal">복잡한 엑셀을 <span class="hl">있는 그대로</span> 두고,<br>
       그 안의 <span class="hl">숨은 구조</span>만 나란히 꺼내 봅니다</h1>
-    <p class="hero-sub">
+    <p class="hero-sub reveal d1">
       표가 어디부터 어딘지, 어떤 규칙이 수식에 박혀 있는지, 사람이 손댄 칸은 어딘지 —
       원본과 대조하며 한눈에 확인하세요.
     </p>
-    <div class="actions">
+    <div class="actions reveal d2">
       <div id="dropzone" class="dropzone">
         <input type="file" id="fileInput" accept=".xlsx,.xlsm" hidden>
         <div class="dz-icon">＋</div>
@@ -33,7 +33,35 @@
       </div>
       <button id="sampleBtn" class="btn big">샘플로 바로 보기</button>
     </div>
-    <p class="hero-note">파일은 서버 임시폴더에서만 처리되고 저장되지 않습니다</p>
+    <p class="hero-note reveal d3">파일은 서버 임시폴더에서만 처리되고 저장되지 않습니다</p>
+
+    <!-- 기능 쇼케이스 — 스크롤하면 항목별로 등장 -->
+    <section class="showcase">
+      <p class="showcase-eyebrow">what it does</p>
+      <h2 class="showcase-h">xlmeta가 하는 일</h2>
+      <ul class="features">
+        <li class="feat">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg></span>
+          <span class="feat-tx"><b>원본과 나란히 대조</b><p>엑셀 격자는 그대로 두고, 읽어낸 표·머리글·행 식별을 바로 옆에 나란히 보여줘요.</p></span>
+        </li>
+        <li class="feat">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg></span>
+          <span class="feat-tx"><b>수식 속 업무 규칙</b><p><code>SUMIFS</code> 조건을 “결재상태 = 승인” 같은 <b>업무 규칙</b>으로 꺼내요. 규정집엔 없는 규칙이요.</p></span>
+        </li>
+        <li class="feat">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="11" height="11" rx="1"/><circle cx="16" cy="16" r="4.2"/><path d="M19.2 19.2L22 22"/></svg></span>
+          <span class="feat-tx"><b>셀 하나까지 풀이</b><p>클릭한 칸의 값·계산식·쓰인 함수·<b>Python 번역</b>까지 한 칸 단위로 풀어줘요.</p></span>
+        </li>
+        <li class="feat">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3.1 7.6-7 9-3.9-1.4-7-4.4-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span class="feat-tx"><b>승인 레이어</b><p>담당자 확인을 정의의 <b>‘내용’</b>에 붙여요. 뜻이 바뀌면 지문이 달라져 <b>자동 만료</b>돼요.</p></span>
+        </li>
+        <li class="feat">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M10 6H5v13h13v-5"/></svg></span>
+          <span class="feat-tx"><b>AI에게 넘기기</b><p>구조·규칙을 요약 링크로 만들어 <b>ChatGPT·Claude</b>에 원클릭으로 넘겨요.</p></span>
+        </li>
+      </ul>
+    </section>
   </main>
 
   <!-- 로딩 -->

@@ -979,6 +979,32 @@ function interpCell(sheet, r, c, metricId) {
   return h;
 }
 
+// 기능 쇼케이스: 화면에 들어오면 항목별로 스태거 등장 (안전장치 포함)
+let _showcaseIO = null, _showcaseFb = null;
+function initShowcase() {
+  const root = $("landing");
+  const wrap = document.querySelector(".features");
+  const feats = Array.prototype.slice.call(document.querySelectorAll(".feat"));
+  if (!wrap || !feats.length) return;
+  feats.forEach((f) => { f.classList.remove("in"); f.style.transitionDelay = ""; });
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || !("IntersectionObserver" in window)) { wrap.classList.remove("anim"); return; }
+  wrap.classList.add("anim");
+  const show = (f, i) => { f.style.transitionDelay = Math.min(i, 4) * 80 + "ms"; f.classList.add("in"); };
+  if (_showcaseIO) _showcaseIO.disconnect();
+  _showcaseIO = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      show(e.target, feats.indexOf(e.target));
+      _showcaseIO.unobserve(e.target);
+    });
+  }, { root: root, threshold: 0.2 });
+  feats.forEach((f) => _showcaseIO.observe(f));
+  // 관측이 안 되는 환경에서도 절대 숨은 채로 남지 않게
+  clearTimeout(_showcaseFb);
+  _showcaseFb = setTimeout(() => feats.forEach((f, i) => { if (!f.classList.contains("in")) show(f, i); }), 1800);
+}
+
 // ── 시작 화면 이벤트 ─────────────────────────────────────────
 function initLanding() {
   const dz = $("dropzone");
@@ -1000,7 +1026,9 @@ function initLanding() {
     show($("topTag"));
     show($("landing"));
     $("fileInput").value = "";
+    initShowcase();                 // 첫 화면 돌아오면 다시 등장
   };
+  initShowcase();
 }
 
 initLanding();
