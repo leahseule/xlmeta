@@ -197,4 +197,4 @@ docker compose up -d --build     # → http://localhost (EC2에선 공개 주소
 
 Apache-2.0
 
-<div align="center"><sub>FDE 포트폴리오 · 고객 엑셀 구조 파악 → 시스템 이관이라는 실무의 핵심 장면을 담았습니다.</sub></div>
+<div align="center"><sub>고객 엑셀 구조 파악 → 시스템 이관이라는 실무의 핵심 장면을 담았습니다.</sub></div>
