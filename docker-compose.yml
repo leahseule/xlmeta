@@ -1,0 +1,17 @@
+# EC2에서 한 줄로 올리고 내리는 운영 파일:  docker compose up -d --build
+services:
+  xlmeta:
+    build: .
+    image: xlmeta:latest
+    container_name: xlmeta
+    ports:
+      - "80:8000"                 # http://<EC2-공개주소> 로 바로 접근 (링크에 포트 안 붙음)
+    environment:
+      PORT: "8000"
+      XLMETA_DATA_DIR: /data/summaries
+    volumes:
+      - xlmeta_data:/data         # /s/<id> 요약이 컨테이너 재시작에도 살아남게
+    restart: unless-stopped
+
+volumes:
+  xlmeta_data:

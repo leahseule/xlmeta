@@ -1,0 +1,21 @@
+# 이미지에 넣지 않을 것 (가볍게)
+.git
+.gitignore
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 런타임에 재생성/누적되는 것
+webapp/instance/
+*.xlsx
+
+# 예시·문서 (실행에 불필요)
+demo/
+docs/
+Procfile

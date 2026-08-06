@@ -45,6 +45,21 @@ python webapp/app.py            # → http://127.0.0.1:5000
 
 핵심 도구(`xlmeta`)는 그대로 호출만 하므로, 웹은 선택적 껍데기입니다.
 
+#### AI에게 넘기기
+
+엑셀을 올리면 구조·업무규칙을 **결정론적으로 요약**해 공개 페이지(`/s/<id>`)로 만들고,
+그 링크를 **ChatGPT·Claude 프리필**에 담아 넘깁니다. 요약이 URL이 아니라 링크가
+가리키는 페이지에 있어 주소가 길어지지 않습니다. (원시 데이터 값은 담지 않고 구조·규칙만.)
+
+#### 배포 (Docker + AWS EC2)
+
+```bash
+docker compose up -d --build     # → http://localhost (EC2에선 공개 주소)
+```
+
+`ProxyFix`가 걸려 있어 리버스 프록시(ALB/Caddy) 뒤에서 `https://도메인` 링크가
+그대로 나옵니다. 자세한 EC2 절차는 [`DEPLOY.md`](DEPLOY.md) 참고.
+
 ## 무엇을 뽑는가
 
 | | 내용 |
