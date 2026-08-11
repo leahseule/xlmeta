@@ -214,9 +214,97 @@ def write_bundle(meta, outdir):
     with open(os.path.join(outdir, "index.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(root))
 
+    # 엑셀 하나 = OKF 한 문서. 흩어진 파일 대신 에이전트가 한 번에 읽는다.
+    with open(os.path.join(outdir, "okf.md"), "w", encoding="utf-8") as f:
+        f.write(render_single(meta))
+
     # 셀 원장은 개념이 아니라 원시 데이터 → OKF 밖에 둔다
     with open(os.path.join(outdir, "cell_graph.json"), "w", encoding="utf-8") as f:
         json.dump(meta["cell_graph"], f, ensure_ascii=False, indent=2, default=str)
 
     return {"metrics": len(id2file), "sources": len(source_files),
             "excluded": len(low), "cells": len(meta["cell_graph"])}
+
+
+def render_single(meta):
+    """엑셀 하나의 지식을 '한 문서'로 합쳐 마크다운 문자열로 돌려준다.
+       여러 파일로 흩어진 번들 대신, AI 에이전트가 한 번에 읽을 단일 OKF."""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    src = meta["source_file"]
+    used = [m for m in meta["metrics"] if m["confidence"]["level"] != "low"]
+    low = [m for m in meta["metrics"] if m["confidence"]["level"] == "low"]
+
+    L = [frontmatter({
+        "okf_version": "0.1", "type": "Knowledge Bundle",
+        "title": f"{src} 지식 번들", "source_file": src,
+        "description": "엑셀 수식에서 추론 없이 추출한 지표 정의 (단일 문서)",
+        "timestamp": now, "derivation": "deterministic-formula-parse",
+    }), "",
+        f"# {src} — 엑셀 지식 번들", "",
+        "엑셀 수식·레이아웃에서 (LLM 없이) 결정론적으로 추출했습니다. 재실행하면 같은 결과.", "",
+        f"**요약** · 지표 {len(used)}건 · 원천 표 {len(meta['sources'])}개 · 수식 셀 {len(meta['cell_graph'])}개", ""]
+
+    if used:
+        L += ["## 지표", ""]
+        for m in used:
+            L += [f"### {m['title'] or m['id']}", "",
+                  f"- 적용 범위: `{m['applies_to']}`",
+                  f"- 원본 수식: `{m['formula']}`"]
+            if m.get("explanation"):
+                L.append(f"- 계산 설명: {m['explanation']}")
+            rules = [c for c in m["conditions"] if c["kind"] == "business_rule"]
+            if rules:
+                L.append("- 업무 규칙: " + ", ".join(
+                    f"{c.get('target_name') or c['target_ref']} {c['operator']} {c['value']}" for c in rules))
+            keys = [c for c in m["conditions"] if c["kind"] == "match_key"]
+            if keys:
+                L.append("- 매칭 키: " + ", ".join(
+                    f"{c.get('target_name') or c['target_ref']} = {c['value']}" for c in keys))
+            seen, reads = set(), []
+            for r in m["reads"]:
+                if r["ref"] in seen:
+                    continue
+                seen.add(r["ref"])
+                reads.append(f"`{r['ref']}`" + (f"({r['name']})" if r["name"] else ""))
+            if reads:
+                L.append("- 원천: " + ", ".join(reads))
+            if m["constants"]:
+                L.append("- 하드코딩 상수: " + ", ".join(f"`{x}`" for x in m["constants"]))
+            if m["manual_overrides"]:
+                L.append("- 수기 개입: " + ", ".join(
+                    f"`{o['cell']}`={o['value']}" for o in m["manual_overrides"]))
+            dep = [meta_title(meta, d) for d in m.get("depends_on", [])]
+            use = [meta_title(meta, u) for u in m.get("used_by", [])]
+            if dep:
+                L.append("- 재료(참조 지표): " + ", ".join(dep))
+            if use:
+                L.append("- 쓰이는 곳: " + ", ".join(use))
+            if m.get("python"):
+                L += ["", "```python", m["python"], "```"]
+            L.append("")
+
+    if meta["sources"]:
+        L += ["## 원천 표", ""]
+        for s in meta["sources"]:
+            name = s["title"] or s["range"]
+            L += [f"### {name}  `{s['range']}`  ({s['row_count']}행)", "",
+                  "| 열 | 이름 |", "|---|---|"]
+            for col, nm in s["columns"].items():
+                L.append(f"| `{col}` | {nm} |")
+            if s["subtotal_rows"]:
+                L += ["", f"> 소계/합계 행 {s['subtotal_rows']} — 지표 추출에서 제외됨."]
+            L.append("")
+
+    if low:
+        L += ["## 제외 (이름 미확정·반복 부족)", ""]
+        L += [f"- `{m['anchor_cell']}` — {m['formula'][:60]}" for m in low[:20]]
+        L.append("")
+    if meta["unsupported"]:
+        L += ["## 미지원", ""] + [f"- `{u['cell']}` — {u['reason']}"
+                                  for u in meta["unsupported"][:20]]
+    return "\n".join(L).rstrip() + "\n"
+
+
+def meta_title(meta, mid):
+    m = next((x for x in meta["metrics"] if x["id"] == mid), None)
+    return (m["title"] or m["id"]) if m else mid

@@ -254,6 +254,7 @@ def analyze_path(xlsx_path):
         "metrics": meta["metrics"],
         "unsupported": meta["unsupported"],
         "bundle_md": bundle_md,
+        "okf_single": bundle_md.get("okf.md", ""),   # 엑셀 하나 = OKF 한 문서
         "summary": summ,
         "share": share,
     }

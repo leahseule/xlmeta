@@ -418,31 +418,38 @@ function aiHandoffBlk() {
     "card");
 }
 
-// OKF 번들(파일 전체) 뷰어 — 문서 하나씩 골라 보고 복사
+// OKF — 엑셀 하나 = 한 문서. 에이전트가 한 번에 읽는다.
 function okfBlk() {
-  const md = DATA.bundle_md || {};
-  const rank = (f) => (f === "index.md" ? 0 : f.startsWith("metrics/") ? 1 : 2);
-  const files = Object.keys(md).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
-  if (!files.length) return "";
-  const first = files[0];
-  const opts = files.map((f) => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
-  return blk("OKF 번들 · 엑셀 파일 전체",
-    `<p class="blk-lead">엑셀 전체에서 추출한 지식 번들(마크다운)이에요. 다른 시스템·문서로 그대로 옮길 수 있어요.</p>
+  const okf = DATA.okf_single || "";
+  if (!okf) return "";
+  return blk("OKF · 엑셀 파일 전체 (한 문서)",
+    `<p class="blk-lead">엑셀 전체 지식을 <b>하나의 문서</b>로 합쳤어요 — 지표마다 흩어지지 않아, 에이전트가 한 번에 읽어요.</p>
      <div class="okf-bar">
-       <select id="okfSelect" class="okf-select">${opts}</select>
-       <button class="chip link" id="okfCopy">이 문서 복사</button>
+       <button class="chip link" id="okfCopy">전체 복사</button>
+       <button class="chip link" id="okfDownload">.md 내려받기</button>
      </div>
-     <pre class="okf-view" id="okfView">${esc(md[first])}</pre>`, "card");
+     <pre class="okf-view" id="okfView">${esc(okf)}</pre>`, "card");
+}
+
+function downloadOkf() {
+  const okf = DATA.okf_single || "";
+  if (!okf) return;
+  const name = (DATA.source_file || "okf").replace(/\.[^.]+$/, "") + ".okf.md";
+  const blob = new Blob([okf], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function renderExport() {
   const body = $("exportBody");
   if (!DATA) { body.innerHTML = `<p class="muted">먼저 엑셀을 분석하세요.</p>`; return; }
-  body.innerHTML = aiHandoffBlk() + okfBlk();       // 위: AI에게 넘기기 / 아래: OKF
-  const sel = $("okfSelect");
-  if (sel) sel.onchange = () => { $("okfView").textContent = DATA.bundle_md[sel.value] || ""; };
+  body.innerHTML = aiHandoffBlk() + okfBlk();       // 위: AI에게 넘기기 / 아래: OKF 한 문서
   body.onclick = (e) => {
-    if (e.target.closest("#okfCopy")) return copyText($("okfView").textContent);
+    if (e.target.closest("#okfCopy")) return copyText(DATA.okf_single || "");
+    if (e.target.closest("#okfDownload")) return downloadOkf();
     const cp = e.target.closest("[data-copy]");
     if (cp) copyText(cp.dataset.copy);
   };
