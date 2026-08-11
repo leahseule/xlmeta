@@ -397,6 +397,11 @@ function interpRef(sel, from) {
   return h;
 }
 
+// 액션 칩 아이콘 (복사/열기/내려받기 — 링크 화살표 대신 동작에 맞게)
+const IC_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`;
+const IC_OPEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-8 8"/><path d="M10 6H5v13h13v-5"/></svg>`;
+const IC_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>`;
+
 function aiHandoffBlk() {
   const s = DATA.share;
   if (!s) return "";
@@ -408,11 +413,11 @@ function aiHandoffBlk() {
      <div class="ai-actions">
        <a class="btn ai" href="${claude}" target="_blank" rel="noopener">Claude에서 열기</a>
        <a class="btn ai" href="${gpt}" target="_blank" rel="noopener">ChatGPT에서 열기</a>
-       <a class="btn ghost" href="${esc(s.path)}" target="_blank" rel="noopener">요약 페이지 보기</a>
      </div>
      <div class="ai-links">
-       <button class="chip link" data-copy="${esc(s.prefill)}">AI에게 보낼 문구 복사</button>
-       <button class="chip link" data-copy="${esc(s.url)}">링크만 복사</button>
+       <a class="act-chip" href="${esc(s.path)}" target="_blank" rel="noopener">${IC_OPEN} 요약 페이지 보기</a>
+       <button class="act-chip" data-copy="${esc(s.prefill)}">${IC_COPY} AI에게 보낼 문구 복사</button>
+       <button class="act-chip" data-copy="${esc(s.url)}">${IC_COPY} 링크만 복사</button>
      </div>
      <p class="blk-note">버튼이 자동으로 안 열리면, 위 <b>문구를 복사</b>해 AI 대화창에 붙여넣으면 돼요. AI가 링크를 읽으려면 <b>공개 주소</b>여야 해요(배포된 주소에서 동작).</p>`,
     "card");
@@ -425,8 +430,8 @@ function okfBlk() {
   return blk("OKF · 엑셀 파일 전체 (한 문서)",
     `<p class="blk-lead">엑셀 전체 지식을 <b>하나의 문서</b>로 합쳤어요 — 지표마다 흩어지지 않아, 에이전트가 한 번에 읽어요.</p>
      <div class="okf-bar">
-       <button class="chip link" id="okfCopy">전체 복사</button>
-       <button class="chip link" id="okfDownload">.md 내려받기</button>
+       <button class="act-chip" id="okfCopy">${IC_COPY} 전체 복사</button>
+       <button class="act-chip" id="okfDownload">${IC_DOWN} .md 내려받기</button>
      </div>
      <pre class="okf-view" id="okfView">${esc(okf)}</pre>`, "card");
 }

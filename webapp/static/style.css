@@ -74,7 +74,14 @@ code, .mono { font-family: var(--mono); }
 .ai-actions .btn { text-decoration: none; }
 .btn.ai { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn.ai:hover { background: #333; border-color: #333; }
-.ai-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
+.ai-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 2px; }
+/* 액션 칩 — 요약 보기·복사·내려받기 같은 위계, 동작에 맞는 아이콘 */
+.act-chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--sans);
+  font-size: 12.5px; font-weight: 500; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer;
+  text-decoration: none; line-height: 1; transition: .12s; }
+.act-chip:hover { border-color: var(--excel); color: var(--excel); }
+.act-chip svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .blk-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
 
 /* 내보내기 드로어 (상단바 버튼 → 오른쪽 슬라이드) */
