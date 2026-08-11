@@ -24,22 +24,12 @@
       표가 어디부터 어딘지, 어떤 규칙이 수식에 박혀 있는지, 사람이 손댄 칸은 어딘지 —
       원본과 대조하며 한눈에 확인하세요.
     </p>
-    <div class="actions reveal d2">
-      <div id="dropzone" class="dropzone">
-        <input type="file" id="fileInput" accept=".xlsx,.xlsm" hidden>
-        <div class="dz-icon">＋</div>
-        <p class="dz-main">엑셀 파일을 끌어다 놓거나 클릭</p>
-        <p class="dz-hint">.xlsx · .xlsm</p>
-      </div>
-      <button id="sampleBtn" class="btn big">샘플로 바로 보기</button>
-    </div>
-    <p class="hero-note reveal d3">파일은 서버 임시폴더에서만 처리되고 저장되지 않습니다</p>
-
-    <!-- 기능 쇼케이스 — 스크롤하면 항목별로 등장 -->
-    <section class="showcase">
-      <p class="showcase-eyebrow">what it does</p>
-      <h2 class="showcase-h">xlmeta가 하는 일</h2>
-      <ul class="features">
+    <!-- 왼쪽: 하는 일 · 오른쪽: 업로드 — 나란히 -->
+    <div class="landing-cols">
+      <section class="col-features showcase">
+        <p class="showcase-eyebrow">what it does</p>
+        <h2 class="showcase-h">xlmeta가 하는 일</h2>
+        <ul class="features">
         <li class="feat">
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/></svg></span>
           <span class="feat-tx"><b>원본과 나란히 대조</b><p>엑셀 격자는 그대로 두고, 읽어낸 표·머리글·행 식별을 바로 옆에 나란히 보여줘요.</p></span>
@@ -61,7 +51,22 @@
           <span class="feat-tx"><b>AI에게 넘기기</b><p>구조·규칙을 요약 링크로 만들어 <b>ChatGPT·Claude</b>에 원클릭으로 넘겨요.</p></span>
         </li>
       </ul>
-    </section>
+      </section>
+      <aside class="col-upload reveal d2">
+        <p class="showcase-eyebrow">try it now</p>
+        <h2 class="showcase-h">지금 올려보기</h2>
+        <div class="actions">
+          <div id="dropzone" class="dropzone">
+            <input type="file" id="fileInput" accept=".xlsx,.xlsm" hidden>
+            <div class="dz-icon">＋</div>
+            <p class="dz-main">엑셀 파일을 끌어다 놓거나 클릭</p>
+            <p class="dz-hint">.xlsx · .xlsm</p>
+          </div>
+          <button id="sampleBtn" class="btn big">샘플로 바로 보기</button>
+        </div>
+        <p class="hero-note">파일은 서버 임시폴더에서만 처리되고 저장되지 않습니다</p>
+      </aside>
+    </div>
   </main>
 
   <!-- 로딩 -->
