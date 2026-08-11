@@ -346,8 +346,9 @@ function renderInterp() {
   const panel = $("interp");
   panel.innerHTML = `<nav class="crumb">${crumbHtml}</nav>${body}`;
   panel.onclick = (e) => {
-    const el = e.target.closest(".cr-link, [data-ref-a1], [data-focus-r], [data-goto], [data-region], [data-back-metric], [data-copy]");
+    const el = e.target.closest(".cr-link, [data-ref-a1], [data-focus-r], [data-goto], [data-region], [data-back-metric], [data-copy], [data-approve]");
     if (!el) return;
+    if (el.dataset.approve) return doApprove(el.dataset.fp, el.dataset.approve === "revoke", el.dataset.mid);
     if (el.dataset.focusR) return focusCell(el.dataset.focusSheet, +el.dataset.focusR, +el.dataset.focusC, el.dataset.focusMetric);
     if (el.dataset.goto) return goToMetric(el.dataset.goto);
     if (el.dataset.backMetric) return goToMetric(el.dataset.backMetric);
@@ -888,11 +889,52 @@ function rowIdentityBlk(sheet, reg, r, fromId) {
 }
 
 // 열(계산 값) 전체 뷰
+// 담당자 확인(승인) — 화면에서 '확인 도장' 찍기/해제
+function approvalBlk(m) {
+  if (!m || !m.fingerprint) return "";
+  const approved = m.status === "approved";
+  const info = m.approval || {};
+  let inner;
+  if (approved) {
+    const who = esc(info.approved_by || "담당자");
+    const when = info.approved_at ? " · " + esc(String(info.approved_at).slice(0, 10)) : "";
+    inner = `<div class="ap-row"><span class="ap-badge ok">✓ 확인됨</span>`
+      + `<span class="ap-meta">${who}${when}</span>`
+      + `<button class="ap-undo" data-approve="revoke" data-fp="${esc(m.fingerprint)}" data-mid="${esc(m.id)}">확인 해제</button></div>`
+      + `<p class="blk-note">이 정의의 <b>뜻</b>에 도장이 붙었어요. 조건·구조가 바뀌면 자동으로 풀려요.</p>`;
+  } else {
+    inner = `<div class="ap-row"><span class="ap-badge wait">확인 대기</span>`
+      + `<span class="ap-meta">아직 담당자 확인 전이에요.</span></div>`
+      + `<div class="ap-actions"><input class="ap-name" type="text" value="담당자" maxlength="20" aria-label="확인하는 사람">`
+      + `<button class="btn ap-stamp" data-approve="do" data-fp="${esc(m.fingerprint)}" data-mid="${esc(m.id)}">확인 도장 찍기</button></div>`;
+  }
+  return blk("담당자 확인", inner, "card");
+}
+
+function doApprove(fp, revoke, mid) {
+  const nameEl = document.querySelector(".ap-name");
+  const by = (nameEl && nameEl.value.trim()) || "담당자";
+  const m = METRIC_BY_ID[mid] || {};
+  fetch("/api/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fingerprint: fp, revoke: !!revoke, by, name: m.title || "", canonical: m.canonical || "" }),
+  }).then((r) => r.json()).then((res) => {
+    if (res.error) return toast(res.error);
+    (DATA.metrics || []).forEach((mm) => {          // 같은 지문 지표 모두 갱신
+      if (mm.fingerprint === fp) { mm.status = res.status; mm.approval = res.approval; }
+    });
+    renderInterp();
+    toast(res.status === "approved" ? "확인 도장을 찍었어요 ✓" : "확인을 해제했어요");
+  }).catch(() => toast("승인 처리에 실패했어요"));
+}
+
 function interpMetric(m) {
   if (!m) return `<p class="muted">항목을 찾을 수 없습니다.</p>`;
   let h = ihead(
     `${scopePill("열 전체")} ${esc(m.sheet)} 시트 · ${esc(colLetterOf(m.anchor_cell))}열 <span class="tag ok">자동 계산</span>`,
     m.title || m.id, `${m.applies_to.split("!").pop()} · ${m.confidence.row_repeat}개 행`);
+  h += approvalBlk(m);
   h += calcChunk(m, m.formula, false);
   if (m.manual_overrides.length) {
     const items = m.manual_overrides.map((o) =>
@@ -944,6 +986,8 @@ function interpCell(sheet, r, c, metricId) {
   if (override) vb += `<p class="vd-manual">사람이 직접 넣은 값이에요. 수식으로 자동 계산된 게 아니에요.</p>`;
   else if (!isFormula) vb += `<p class="vd-manual">직접 입력된 값이에요 (수식 아님).</p>`;
   h += blk("이 칸의 값", vb, "card");
+
+  h += approvalBlk(m);        // 계산 값이면 담당자 확인(도장) 블록
 
   // 표 제목으로 추측된 칸이면 그 사실 + 대상 표 링크
   if (titleReg) {
