@@ -411,10 +411,10 @@ function aiHandoffBlk() {
        <a class="btn ghost" href="${esc(s.path)}" target="_blank" rel="noopener">요약 페이지 보기</a>
      </div>
      <div class="ai-links">
-       <button class="chip link" data-copy="${esc(s.prefill)}">프리필 문구 복사</button>
+       <button class="chip link" data-copy="${esc(s.prefill)}">AI에게 보낼 문구 복사</button>
        <button class="chip link" data-copy="${esc(s.url)}">링크만 복사</button>
      </div>
-     <p class="blk-note">요약은 주소가 아니라 <b>링크가 가리키는 페이지</b>에 담겨요(URL이 길어지지 않음). AI가 읽으려면 링크가 <b>공개 주소</b>여야 해요 — 배포된 주소에서 동작해요.</p>`,
+     <p class="blk-note">버튼이 자동으로 안 열리면, 위 <b>문구를 복사</b>해 AI 대화창에 붙여넣으면 돼요. AI가 링크를 읽으려면 <b>공개 주소</b>여야 해요(배포된 주소에서 동작).</p>`,
     "card");
 }
 
