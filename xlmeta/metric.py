@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 from . import formula as F
 from . import explain as X
 from . import insights as INS
+from . import concepts as CON
 from .evaluate import Evaluator
 from .layout import analyze_sheet
 
@@ -297,4 +298,5 @@ def extract(path):
         "unsupported": unsupported,
     }
     result["insights"] = INS.analyze(result)   # 의존 체인·순환·정의된 이름·불일치
+    result["concepts"] = CON.build_concepts(book)  # 여러 시트에 흩어진 개념을 묶음
     return result

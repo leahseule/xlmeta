@@ -89,6 +89,12 @@ code, .mono { font-family: var(--mono); }
 .ins-warn-sm > b { color: var(--warn-ink); font-size: 13px; }
 .ins-inc { font-size: 12.5px; margin-top: 4px; color: var(--ink); }
 
+/* 개념 묶음 작은 블록 */
+.cpt-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.cpt-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
+  background: #eef7f0; color: #1e7a3c; border: 1px solid #cfe8d6; border-radius: 20px; padding: 2px 8px; }
+.cpt-chip i { font-style: normal; font-size: 10.5px; background: #217346; color: #fff; border-radius: 10px; padding: 0 6px; }
+
 /* 내보내기 드로어 (상단바 버튼 → 오른쪽 슬라이드) */
 .export-btn { background: var(--excel); color: #fff; border-color: var(--excel); }
 .export-btn:hover { background: var(--excel-2); border-color: var(--excel-2); }

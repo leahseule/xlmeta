@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 from .summary import file_tree, _tables, data_table_md, _fmt_val
 from .insights import insights_md
+from .concepts import concepts_md
 
 
 def slug(s, fallback="unnamed"):
@@ -251,6 +252,10 @@ def render_single(meta):
     ins_md = insights_md(meta.get("insights"))
     if ins_md:
         L += [ins_md, ""]
+
+    con_md = concepts_md(meta.get("concepts"))
+    if con_md:
+        L += [con_md, ""]
 
     if used:
         L += ["## 지표", ""]

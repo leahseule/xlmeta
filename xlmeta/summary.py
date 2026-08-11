@@ -11,6 +11,7 @@ from collections import defaultdict
 
 from . import explain as X
 from . import insights as INS
+from . import concepts as CON
 
 
 def _ro(w):
@@ -271,6 +272,7 @@ def summarize(meta):
         "tree": file_tree(meta),
         "properties": meta.get("properties") or {},
         "insights": meta.get("insights") or {},
+        "concepts": meta.get("concepts") or [],
         "sheets": cards,
         "totals": {
             "sheets": len(cards),
@@ -294,6 +296,9 @@ def markdown(summary):
     ins_md = INS.insights_md(summary.get("insights"))
     if ins_md:
         L += [ins_md, ""]
+    con_md = CON.concepts_md(summary.get("concepts"))
+    if con_md:
+        L += [con_md, ""]
     for c in summary["sheets"]:
         L += ["---", "", f"## 시트: {c['sheet']}", "", c["paragraph"], ""]
         if c["regions"]:

@@ -486,6 +486,25 @@ function insightsBlk() {
   return blk("진단 · 관계와 불일치", inner, "card");
 }
 
+// 여러 시트에 흩어진 개념 묶음 — 개요에 작게
+function conceptsBlk() {
+  const cons = (DATA.summary && DATA.summary.concepts) || [];
+  const linked = cons.filter((c) => c.links > 0);
+  if (!linked.length) return "";
+  let inner = `<p class="blk-note" style="margin-top:0">같은 개념이 여러 시트에 흩어진 걸 하나로 묶었어요 (LLM 없이).</p>`;
+  inner += `<div class="cpt-chips">`;
+  linked.slice(0, 8).forEach((c) => {
+    inner += `<span class="cpt-chip">${esc(c.name)}<i>${c.links}</i></span>`;
+  });
+  inner += `</div>`;
+  const top = linked[0];
+  if (top) {
+    const ev = (top.evidence || []).slice(0, 4).map((e) => `<code>${esc(e)}</code>`).join(" ");
+    inner += `<p class="blk-note"><b>${esc(top.name)}</b> — ${ev} 등 ${top.evidence.length}곳을 한 객체로. 전체는 <b>AI에게 넘기기</b>의 요약에서.</p>`;
+  }
+  return blk("개념 · 흩어진 개념 묶기", inner, "card");
+}
+
 function interpOverview(sheet) {
   const nCalc = DATA.metrics.filter((m) => m.sheet === sheet.name && m.md_key).length;
   const nFormula = sheet.cells.flat().filter((c) => c.t === "f").length;
@@ -497,6 +516,7 @@ function interpOverview(sheet) {
   if (card && card.paragraph) h += blk("이 시트는", `<p class="blk-lead">${esc(card.paragraph)}</p>`, "card");
 
   h += insightsBlk();          // 파일 전체 진단 (개요에 작게)
+  h += conceptsBlk();          // 흩어진 개념 묶음 (개요에 작게)
 
   if (sheet.regions.length) {
     const rows = sheet.regions.map((reg) => {
