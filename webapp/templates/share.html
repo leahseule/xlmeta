@@ -27,11 +27,15 @@
     .totals{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px;}
     .totals .t{background:var(--soft);border:1px solid var(--line);border-radius:20px;
       padding:3px 12px;font-size:12.5px;font-weight:600;}
-    .copybar{display:flex;gap:8px;align-items:center;margin:18px 0 0;}
+    .copybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0 0;}
     button{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
       border:1px solid var(--line);background:var(--bg);color:var(--ink);
       border-radius:8px;padding:8px 14px;}
     button:hover{border-color:var(--accent);color:var(--accent);}
+    .copybtn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);
+      color:#fff;border-color:var(--accent);padding:9px 16px;flex:0 0 auto;}
+    .copybtn:hover{color:#fff;filter:brightness(1.08);}
+    .copybtn svg{width:15px;height:15px;}
     .sheet{border-top:1px solid var(--line);margin-top:28px;padding-top:24px;}
     .sheet h2{font-size:18px;margin:0 0 10px;}
     .para{background:var(--soft);border:1px solid var(--line);border-left:3px solid var(--accent);
@@ -74,8 +78,11 @@
       <span class="t">수식 셀 {{ summary.totals.formula_cells }}</span>
     </div>
     <div class="copybar">
-      <button onclick="copyMd()">요약 마크다운 복사</button>
-      <span class="lead" style="margin:0;">AI에게 이 페이지 링크를 주면 이 내용을 읽고 답합니다.</span>
+      <button class="copybtn" onclick="copyMd()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        내용 복사하기
+      </button>
+      <span class="lead" style="margin:0;">AI에게 이 페이지 링크를 주거나, 내용을 복사해 붙여넣으면 돼요.</span>
     </div>
 
     {% if summary.tree %}
