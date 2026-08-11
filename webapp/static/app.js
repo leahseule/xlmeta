@@ -414,9 +414,41 @@ function aiHandoffBlk() {
        <button class="chip link" data-copy="${esc(s.prefill)}">프리필 문구 복사</button>
        <button class="chip link" data-copy="${esc(s.url)}">링크만 복사</button>
      </div>
-     <p class="blk-note">요약은 주소가 아니라 <b>링크가 가리키는 페이지</b>에 담겨요(URL이 길어지지 않음). AI가 읽으려면 링크가 <b>공개 주소</b>여야 해요 — 배포하면 동작해요.</p>`,
+     <p class="blk-note">요약은 주소가 아니라 <b>링크가 가리키는 페이지</b>에 담겨요(URL이 길어지지 않음). AI가 읽으려면 링크가 <b>공개 주소</b>여야 해요 — 배포된 주소에서 동작해요.</p>`,
     "card");
 }
+
+// OKF 번들(파일 전체) 뷰어 — 문서 하나씩 골라 보고 복사
+function okfBlk() {
+  const md = DATA.bundle_md || {};
+  const rank = (f) => (f === "index.md" ? 0 : f.startsWith("metrics/") ? 1 : 2);
+  const files = Object.keys(md).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  if (!files.length) return "";
+  const first = files[0];
+  const opts = files.map((f) => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+  return blk("OKF 번들 · 엑셀 파일 전체",
+    `<p class="blk-lead">엑셀 전체에서 추출한 지식 번들(마크다운)이에요. 다른 시스템·문서로 그대로 옮길 수 있어요.</p>
+     <div class="okf-bar">
+       <select id="okfSelect" class="okf-select">${opts}</select>
+       <button class="chip link" id="okfCopy">이 문서 복사</button>
+     </div>
+     <pre class="okf-view" id="okfView">${esc(md[first])}</pre>`, "card");
+}
+
+function renderExport() {
+  const body = $("exportBody");
+  if (!DATA) { body.innerHTML = `<p class="muted">먼저 엑셀을 분석하세요.</p>`; return; }
+  body.innerHTML = aiHandoffBlk() + okfBlk();       // 위: AI에게 넘기기 / 아래: OKF
+  const sel = $("okfSelect");
+  if (sel) sel.onchange = () => { $("okfView").textContent = DATA.bundle_md[sel.value] || ""; };
+  body.onclick = (e) => {
+    if (e.target.closest("#okfCopy")) return copyText($("okfView").textContent);
+    const cp = e.target.closest("[data-copy]");
+    if (cp) copyText(cp.dataset.copy);
+  };
+}
+function openExport() { renderExport(); $("exportOverlay").classList.remove("hidden"); }
+function closeExport() { $("exportOverlay").classList.add("hidden"); }
 
 function interpOverview(sheet) {
   const nCalc = DATA.metrics.filter((m) => m.sheet === sheet.name && m.md_key).length;
@@ -427,8 +459,6 @@ function interpOverview(sheet) {
   // 이 시트는 무엇을 관리하는 문서인지 — 결정론적 한 문단
   const card = (DATA.summary && DATA.summary.sheets || []).find((c) => c.sheet === sheet.name);
   if (card && card.paragraph) h += blk("이 시트는", `<p class="blk-lead">${esc(card.paragraph)}</p>`, "card");
-
-  h += aiHandoffBlk();
 
   if (sheet.regions.length) {
     const rows = sheet.regions.map((reg) => {
@@ -1028,6 +1058,13 @@ function initLanding() {
     $("fileInput").value = "";
     initShowcase();                 // 첫 화면 돌아오면 다시 등장
   };
+
+  // 내보내기 드로어 (파일 전체: AI에게 넘기기 + OKF)
+  $("exportBtn").onclick = openExport;
+  $("exportClose").onclick = closeExport;
+  $("exportOverlay").onclick = (e) => { if (e.target.id === "exportOverlay") closeExport(); };
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeExport(); });
+
   initShowcase();
 }
 

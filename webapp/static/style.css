@@ -77,6 +77,32 @@ code, .mono { font-family: var(--mono); }
 .ai-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
 .blk-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
 
+/* 내보내기 드로어 (상단바 버튼 → 오른쪽 슬라이드) */
+.export-btn { background: var(--excel); color: #fff; border-color: var(--excel); }
+.export-btn:hover { background: var(--excel-2); border-color: var(--excel-2); }
+.ov-backdrop { position: fixed; inset: 0; background: rgba(15,20,17,.34); z-index: 60;
+  display: flex; justify-content: flex-end; animation: ov-fade .18s ease; }
+@keyframes ov-fade { from { opacity: 0; } to { opacity: 1; } }
+.drawer { width: min(470px, 94vw); height: 100%; background: var(--bg); border-left: 1px solid var(--line);
+  display: flex; flex-direction: column; box-shadow: -14px 0 44px rgba(0,0,0,.14);
+  animation: drawer-in .24s cubic-bezier(.2,.7,.3,1); }
+@keyframes drawer-in { from { transform: translateX(26px); opacity: .5; } to { transform: none; opacity: 1; } }
+.drawer-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.drawer-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--excel); font-weight: 600; margin: 0 0 3px; }
+.drawer-title { font-size: 18px; margin: 0; letter-spacing: -.2px; }
+.drawer-x { background: none; border: none; font-size: 17px; color: var(--muted); cursor: pointer;
+  line-height: 1; padding: 4px 7px; border-radius: 6px; }
+.drawer-x:hover { color: var(--ink); background: var(--accent-soft); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px 44px; }
+.okf-bar { display: flex; gap: 8px; align-items: center; margin: 10px 0 8px; }
+.okf-select { flex: 1; min-width: 0; font-family: var(--mono); font-size: 12.5px; padding: 7px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.okf-view { max-height: 300px; overflow: auto; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word; margin: 0; }
+
 /* ── 시작 화면 ── */
 .landing { max-width: 1000px; margin: 0 auto; padding: 58px 24px 80px; text-align: center;
   height: calc(100vh - 53px); overflow-y: auto; }

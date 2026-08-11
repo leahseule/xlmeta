@@ -12,6 +12,7 @@
     <p id="topTag" class="tagline"><b>있는 그대로</b>의 엑셀 &nbsp;↔&nbsp; <b>읽어낸 구조</b>를 나란히</p>
     <div id="topResults" class="topresults hidden">
       <span class="srcfile" id="srcFile"></span>
+      <button id="exportBtn" class="btn export-btn">AI에게 넘기기</button>
       <button id="resetBtn" class="btn ghost">다시 분석</button>
     </div>
   </header>
@@ -97,6 +98,20 @@
       <div class="interp" id="interp"></div>
     </section>
   </main>
+
+  <!-- 내보내기 드로어 (파일 전체: AI에게 넘기기 + OKF 번들) -->
+  <div id="exportOverlay" class="ov-backdrop hidden">
+    <aside class="drawer" role="dialog" aria-modal="true" aria-label="이 엑셀 내보내기">
+      <header class="drawer-h">
+        <div>
+          <p class="drawer-eyebrow">export · 파일 전체</p>
+          <h2 class="drawer-title">이 엑셀 내보내기</h2>
+        </div>
+        <button id="exportClose" class="drawer-x" aria-label="닫기">✕</button>
+      </header>
+      <div class="drawer-body" id="exportBody"></div>
+    </aside>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
