@@ -13,6 +13,7 @@ make_sample — 데모용 EPC 원가관리 엑셀을 코드로 생성한다.
 import sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
+from openpyxl.workbook.defined_name import DefinedName
 
 
 # ── 실적 시트 (원시 전표 데이터) ──────────────────────────────────
@@ -112,11 +113,32 @@ def build_cost_status(wb):
     return ws
 
 
+# ── 경영요약 시트 (불일치 유발) ──────────────────────────────────
+# 여기도 '발생원가'를 계산하지만, 결재상태(승인) 조건 없이 '전체'를 합한다.
+# → 원가현황의 발생원가(승인만)와 정의가 달라 숫자가 안 맞는다.
+#   xlmeta의 불일치 탐지가 "같은 '발생원가'가 두 곳에서 다르게 계산됨"을 잡는다.
+def build_biz_summary(wb):
+    ws = wb.create_sheet("경영요약")
+    for c, name in enumerate(["프로젝트코드", "발생원가"], start=1):
+        ws.cell(row=1, column=c, value=name).font = Font(bold=True)
+    for i, code in enumerate(["P-2401", "P-2402", "P-2403", "P-2404", "P-2405"], start=2):
+        ws.cell(row=i, column=1, value=code)
+        # 발생원가: 결재상태 무관 '전체' 합 (원가현황은 승인만!) — 정의 불일치
+        ws.cell(row=i, column=2, value=f'=SUMIFS(실적!G:G,실적!C:C,A{i})')
+    return ws
+
+
 def main(path="sample_epc_cost.xlsx"):
     wb = Workbook()
     wb.remove(wb.active)               # 기본 시트 제거
     build_ledger(wb)
     build_cost_status(wb)
+    build_biz_summary(wb)
+
+    # 정의된 이름(named range): xlmeta가 name → 셀 로 뽑아 보고한다.
+    wb.defined_names.add(DefinedName("실적원장", attr_text="실적!$A$1:$G$17"))
+    wb.defined_names.add(DefinedName("프로젝트예산", attr_text="원가현황!$F$6:$F$11"))
+
     wb.save(path)
     print(f"생성: {path}  (시트: {[ws.title for ws in wb.worksheets]})")
     return path

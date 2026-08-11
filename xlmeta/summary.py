@@ -9,6 +9,7 @@ AI에게 넘길 공개 링크 페이지의 본문이 되고, 프리필 헤드라
 from collections import defaultdict
 
 from . import explain as X
+from . import insights as INS
 
 
 def _ro(w):
@@ -239,6 +240,7 @@ def summarize(meta):
         "source_file": meta["source_file"],
         "tree": file_tree(meta),
         "properties": meta.get("properties") or {},
+        "insights": meta.get("insights") or {},
         "sheets": cards,
         "totals": {
             "sheets": len(cards),
@@ -259,6 +261,9 @@ def markdown(summary):
          f"지표 {t['metrics']}개 · 수식 셀 {t['formula_cells']}개", ""]
     if summary.get("tree"):
         L += ["## 구조 (파일 → 시트 → 표 → 컬럼)", "", "```text", summary["tree"], "```", ""]
+    ins_md = INS.insights_md(summary.get("insights"))
+    if ins_md:
+        L += [ins_md, ""]
     for c in summary["sheets"]:
         L += ["---", "", f"## 시트: {c['sheet']}", "", c["paragraph"], ""]
         if c["regions"]:

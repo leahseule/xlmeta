@@ -9,6 +9,7 @@ import re
 from datetime import datetime, timezone
 
 from .summary import file_tree, _tables, data_table_md
+from .insights import insights_md
 
 
 def slug(s, fallback="unnamed"):
@@ -246,6 +247,10 @@ def render_single(meta):
         "엑셀 수식·레이아웃에서 (LLM 없이) 결정론적으로 추출했습니다. 재실행하면 같은 결과.", "",
         f"**요약** · 지표 {len(used)}건 · 원천 표 {len(meta['sources'])}개 · 수식 셀 {len(meta['cell_graph'])}개", "",
         "## 구조 (파일 → 시트 → 표 → 컬럼)", "", "```text", file_tree(meta), "```", ""]
+
+    ins_md = insights_md(meta.get("insights"))
+    if ins_md:
+        L += [ins_md, ""]
 
     if used:
         L += ["## 지표", ""]

@@ -294,5 +294,50 @@
       "원가현황!I6:I11"
     ],
     "value": null
+  },
+  "경영요약!B2": {
+    "formula": "=SUMIFS(실적!G:G,실적!C:C,A2)",
+    "reads": [
+      "실적!G:G",
+      "실적!C:C",
+      "경영요약!A2"
+    ],
+    "value": null
+  },
+  "경영요약!B3": {
+    "formula": "=SUMIFS(실적!G:G,실적!C:C,A3)",
+    "reads": [
+      "실적!G:G",
+      "실적!C:C",
+      "경영요약!A3"
+    ],
+    "value": null
+  },
+  "경영요약!B4": {
+    "formula": "=SUMIFS(실적!G:G,실적!C:C,A4)",
+    "reads": [
+      "실적!G:G",
+      "실적!C:C",
+      "경영요약!A4"
+    ],
+    "value": null
+  },
+  "경영요약!B5": {
+    "formula": "=SUMIFS(실적!G:G,실적!C:C,A5)",
+    "reads": [
+      "실적!G:G",
+      "실적!C:C",
+      "경영요약!A5"
+    ],
+    "value": null
+  },
+  "경영요약!B6": {
+    "formula": "=SUMIFS(실적!G:G,실적!C:C,A6)",
+    "reads": [
+      "실적!G:G",
+      "실적!C:C",
+      "경영요약!A6"
+    ],
+    "value": null
   }
 }

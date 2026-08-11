@@ -12,6 +12,7 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 
 from . import formula as F
 from . import explain as X
+from . import insights as INS
 from .evaluate import Evaluator
 from .layout import analyze_sheet
 
@@ -253,13 +254,24 @@ def extract(path):
         "title": p.title or None,
     }
 
-    return {
+    named_ranges = []                        # 엑셀 정의된 이름 (named range)
+    try:
+        for nm, dn in book.wbf.defined_names.items():
+            val = getattr(dn, "value", None) or getattr(dn, "attr_text", None)
+            named_ranges.append({"name": nm, "refers_to": str(val)})
+    except Exception:                        # noqa: BLE001
+        pass
+
+    result = {
         "source_file": os.path.basename(path),
         "generated_by": "xlmeta 0.1 (no LLM)",
         "properties": properties,
+        "named_ranges": named_ranges,
         "sheets": [ws.title for ws in book.wbf.worksheets],
         "sources": sources,
         "metrics": metrics,
         "cell_graph": cell_graph,
         "unsupported": unsupported,
     }
+    result["insights"] = INS.analyze(result)   # 의존 체인·순환·정의된 이름·불일치
+    return result

@@ -63,6 +63,15 @@
     .dtable th{background:var(--soft);font-weight:600;}
     .dtable tr:last-child td{border-bottom:none;}
     .dtable td:last-child,.dtable th:last-child{border-right:none;}
+    .ins-sec{margin:6px 0 2px;}
+    .ins-h{font-size:13px;font-weight:600;margin:14px 0 4px;color:var(--ink);}
+    .ins-warn{border:1px solid var(--warn-line);background:var(--warn-bg);border-radius:10px;padding:12px 14px;margin:6px 0;}
+    .ins-warn>b{color:var(--warn-ink);}
+    .inc{margin:8px 0 0;padding:8px 0 0;border-top:1px dashed var(--warn-line);}
+    .inc:first-of-type{border-top:none;padding-top:6px;}
+    .inc-concept{font-weight:600;font-size:13.5px;margin-bottom:4px;}
+    .inc-def{font-size:12.5px;margin:2px 0;}
+    .inc-where{display:inline-block;min-width:130px;color:var(--muted);}
     footer{border-top:1px solid var(--line);margin-top:36px;padding-top:16px;
       color:var(--muted);font-size:12.5px;}
     footer a{color:var(--accent);text-decoration:none;}
@@ -101,6 +110,38 @@
     <section class="tree-sec">
       <p class="k">구조 · 파일 → 시트 → 표 → 컬럼</p>
       <pre class="tree">{{ summary.tree }}</pre>
+    </section>
+    {% endif %}
+
+    {% set ins = summary.insights %}
+    {% if ins and (ins.inconsistencies or ins.chains or ins.cycles or ins.named_ranges) %}
+    <section class="ins-sec">
+      <p class="k">진단 · 관계와 불일치</p>
+      {% if ins.inconsistencies %}
+      <div class="ins-warn">
+        <b>⚠️ 정의 불일치 — 같은 개념을 다르게 계산</b>
+        {% for inc in ins.inconsistencies %}
+        <div class="inc">
+          <div class="inc-concept">{{ inc.concept }} — {{ inc.definitions|length }}곳에서 다르게 계산됨</div>
+          {% for d in inc.definitions %}
+          <div class="inc-def"><span class="inc-where">{{ d.where }}</span> <code>{{ d.formula }}</code></div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if ins.chains %}
+      <p class="ins-h">의존 체인 (몇 단계 계산인지)</p>
+      <ul>{% for c in ins.chains %}<li>{{ c.chain }} <span class="pill">{{ c.depth }}단계</span></li>{% endfor %}</ul>
+      {% endif %}
+      {% if ins.cycles %}
+      <p class="ins-h">순환 참조</p>
+      <ul>{% for c in ins.cycles %}<li><span class="pill warn">{{ c.chain }}</span></li>{% endfor %}</ul>
+      {% endif %}
+      {% if ins.named_ranges %}
+      <p class="ins-h">정의된 이름 (named range)</p>
+      <ul>{% for n in ins.named_ranges %}<li><code>{{ n.name }}</code> → <code>{{ n.refers_to }}</code></li>{% endfor %}</ul>
+      {% endif %}
     </section>
     {% endif %}
 
