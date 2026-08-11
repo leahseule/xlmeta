@@ -130,7 +130,6 @@ def _card(name, srcs, metrics, fcell_refs, cell_graph):
         "rules": _rules_of([m]),
         "ref_sheets": sorted({r["ref"].split("!")[0] for r in m.get("reads", [])
                               if "!" in r["ref"] and r["ref"].split("!")[0] != name}),
-        "status": m.get("status", "pending"),
     } for m in named]
 
     n_manual = len(_manual_cells(named))
@@ -206,9 +205,8 @@ def markdown(summary):
         if c["metrics"]:
             L += ["**지표 · 업무규칙**", ""]
             for m in c["metrics"]:
-                mark = "✅" if m["status"] == "approved" else "⏳"
                 rule = f" — 조건: {', '.join(m['rules'])}" if m["rules"] else ""
-                L.append(f"- {mark} **{m['title']}** `{m['formula']}`{rule}")
+                L.append(f"- **{m['title']}** `{m['formula']}`{rule}")
             L.append("")
     return "\n".join(L).rstrip() + "\n"
 

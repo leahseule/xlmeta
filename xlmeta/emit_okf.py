@@ -104,20 +104,10 @@ def write_bundle(meta, outdir):
             "timestamp": now,
             "source_formula": m["formula"],
             "confidence": m["confidence"]["level"],
-            "status": m.get("status", "pending"),
-            "fingerprint": m.get("fingerprint", ""),
             "manual_override_count": len(m["manual_overrides"]),
             "derivation": "deterministic-formula-parse",
         })
         b = ["", f"`{m['applies_to']}` · 원본 수식 `{m['formula']}`", ""]
-
-        appr = m.get("approval")
-        if m.get("status") == "approved" and appr:
-            b += [f"> ✅ **승인됨** — {appr.get('approved_by')} · {appr.get('approved_at')}  ",
-                  f"> 지문 `{m.get('fingerprint')}` — 정의가 바뀌면 자동 만료됩니다.", ""]
-        else:
-            b += ["> ⏳ **대기(pending)** — 담당자 승인 전. **AI가 이 정의를 신뢰해선 안 됩니다.**  ",
-                  f"> 지문 `{m.get('fingerprint')}` — `--approve`로 승인하세요.", ""]
 
         if m.get("explanation"):
             b += ["# 계산 설명", "", m["explanation"], ""]
@@ -193,12 +183,9 @@ def write_bundle(meta, outdir):
     # ── 인덱스 ──────────────────────────────────────────────────
     by_id = {m["id"]: m for m in meta["metrics"]}
 
-    def _mark(i):
-        return "✅" if by_id.get(i, {}).get("status") == "approved" else "⏳"
-
     with open(os.path.join(outdir, "metrics", "index.md"), "w", encoding="utf-8") as f:
-        f.write("# 지표\n\n승인 ✅ · 대기 ⏳\n\n" + "\n".join(
-            f"* {_mark(i)} [{t}]({fn}.md) — {by_id[i]['name']}"
+        f.write("# 지표\n\n" + "\n".join(
+            f"* [{t}]({fn}.md) — {by_id[i]['name']}"
             for i, (fn, t) in id2file.items()) + "\n")
     with open(os.path.join(outdir, "sources", "index.md"), "w", encoding="utf-8") as f:
         f.write("# 원천 표\n\n" + "\n".join(
@@ -213,12 +200,6 @@ def write_bundle(meta, outdir):
             "", "# 목차", "",
             f"* [지표](metrics/) - 추출된 지표 {len(id2file)}건",
             f"* [원천 표](sources/) - {len(source_files)}개 영역", "",
-            "# 승인 상태", "",
-            f"* 승인됨 {sum(1 for i in id2file if by_id.get(i, {}).get('status') == 'approved')}건 "
-            "— 담당자가 확인함. AI가 써도 됨.",
-            f"* 대기 {sum(1 for i in id2file if by_id.get(i, {}).get('status') != 'approved')}건 "
-            "— 승인 전. **AI가 신뢰하면 안 됨.**", "",
-            "정의(내용)가 바뀌면 지문이 달라져 승인이 자동 만료됩니다. 기본값은 대기(pending).", "",
             "# 생성 방식", "",
             "수식을 결정론적으로 파싱해 생성. LLM 추론 없음. "
             "같은 입력이면 같은 출력이며 재실행으로 검증 가능.", ""]

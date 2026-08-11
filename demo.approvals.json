@@ -1,8 +1,0 @@
-{
-  "6b999e76024d": {
-    "name": "발생원가",
-    "canonical": "SUMIFS(금액;결재상태=승인;프로젝트코드~match)",
-    "approved_by": "홍길동(원가PM)",
-    "approved_at": "2026-08-04T02:45:47Z"
-  }
-}

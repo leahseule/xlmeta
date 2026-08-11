@@ -30,7 +30,6 @@ from openpyxl.utils import get_column_letter        # noqa: E402
 
 from xlmeta import extract, write_bundle          # noqa: E402
 from xlmeta import summary as XS                    # noqa: E402
-from xlmeta import approvals as XA                  # noqa: E402
 from xlmeta.emit_okf import slug                   # noqa: E402
 from xlmeta.layout import analyze_sheet, cell_type  # noqa: E402
 from xlmeta import formula as F                     # noqa: E402
@@ -50,11 +49,6 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 # 인스턴스 상태라 배포 디스크가 휘발성이면 재시작 시 사라질 수 있다(데모 허용).
 STORE_DIR = os.environ.get("XLMETA_DATA_DIR", os.path.join(HERE, "instance", "summaries"))
 os.makedirs(STORE_DIR, exist_ok=True)
-
-# 승인 저장소: 담당자가 화면에서 찍은 '확인 도장'을 지문 기준으로 보관.
-# 데이터 볼륨(STORE_DIR의 상위)에 두어 컨테이너 재시작에도 살아남게.
-APPROVALS_PATH = os.environ.get(
-    "XLMETA_APPROVALS", os.path.join(os.path.dirname(STORE_DIR.rstrip("/\\")), "approvals.json"))
 
 
 def _save_summary(sid, payload):
@@ -208,7 +202,7 @@ def _md_key_for_source(s):
 
 def analyze_path(xlsx_path):
     """엑셀 경로 → 화면이 쓸 JSON 묶음. 번들은 임시 폴더에 쓰고 읽어들인다."""
-    meta = extract(xlsx_path, XA.load(APPROVALS_PATH))   # 지문 기준 승인 상태 반영
+    meta = extract(xlsx_path)
 
     with tempfile.TemporaryDirectory() as outdir:
         stats = write_bundle(meta, outdir)
@@ -297,24 +291,6 @@ def api_sample():
             return json_response(analyze_path(xlsx))
     except Exception as e:                          # noqa: BLE001
         return json_response({"error": f"샘플 분석 실패: {e}"}, 500)
-
-
-@app.post("/api/approve")
-def api_approve():
-    """화면에서 '확인 도장' 찍기/해제. 승인은 지문에 붙는다."""
-    d = request.get_json(silent=True) or {}
-    fp = (d.get("fingerprint") or "").strip()
-    if not fp:
-        return json_response({"error": "지문(fingerprint)이 없습니다."}, 400)
-    store = XA.load(APPROVALS_PATH)
-    if d.get("revoke"):
-        store.pop(fp, None)
-        XA.save(store, APPROVALS_PATH)
-        return json_response({"status": "pending", "approval": None})
-    by = (d.get("by") or "").strip() or "담당자"
-    XA.approve(store, fp, d.get("name") or "", d.get("canonical") or "", by)
-    XA.save(store, APPROVALS_PATH)
-    return json_response({"status": "approved", "approval": store[fp]})
 
 
 @app.post("/api/analyze")
