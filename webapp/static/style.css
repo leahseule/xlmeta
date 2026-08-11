@@ -84,12 +84,21 @@ code, .mono { font-family: var(--mono); }
 .act-chip svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .blk-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
 
-/* 진단(관계·불일치) 작은 블록 */
-.ins-warn-sm { border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 9px; padding: 10px 12px; }
-.ins-warn-sm > b { color: var(--warn-ink); font-size: 13px; }
-.ins-inc { font-size: 12.5px; margin-top: 4px; color: var(--ink); }
+/* 엑셀 전체 발견 — 개요 맨 아래, 접히는 블록 */
+.fscope { margin: 10px 0 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+.fscope > summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 600;
+  color: var(--muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+.fscope > summary::-webkit-details-marker { display: none; }
+.fscope > summary::before { content: "▸"; font-size: 11px; }
+.fscope[open] > summary::before { content: "▾"; }
+.fscope-tags { font-weight: 500; font-size: 11.5px; color: #217346;
+  background: #eef7f0; border: 1px solid #cfe8d6; border-radius: 20px; padding: 1px 9px; }
+.fscope-body { padding: 2px 14px 12px; }
+.fscope-h { font-size: 12.5px; font-weight: 600; margin: 12px 0 5px; color: var(--ink); }
+.fscope-warn { font-size: 12.5px; margin: 3px 0; color: var(--ink); }
+.fscope-note { font-size: 12px; color: var(--muted); margin: 7px 0 0; line-height: 1.55; }
 
-/* 개념 묶음 작은 블록 */
+/* 개념 묶음 칩 */
 .cpt-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
 .cpt-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
   background: #eef7f0; color: #1e7a3c; border: 1px solid #cfe8d6; border-radius: 20px; padding: 2px 8px; }

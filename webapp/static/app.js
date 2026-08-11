@@ -461,48 +461,42 @@ function renderExport() {
 function openExport() { renderExport(); $("exportOverlay").classList.remove("hidden"); }
 function closeExport() { $("exportOverlay").classList.add("hidden"); }
 
-// 파일 전체 진단(관계·불일치) — 개요에 작게
-function insightsBlk() {
-  const ins = DATA.summary && DATA.summary.insights;
-  if (!ins) return "";
-  const highs = (ins.inconsistencies || []).filter((i) => i.severity === "high");
-  const infos = (ins.inconsistencies || []).filter((i) => i.severity === "info");
-  const chains = ins.chains || [], cycles = ins.cycles || [], named = ins.named_ranges || [];
-  if (!highs.length && !infos.length && !chains.length && !cycles.length && !named.length) return "";
-  let inner = "";
-  if (highs.length) {
-    inner += `<div class="ins-warn-sm"><b>⚠️ 정의 불일치 ${highs.length}건 — 같은 이름, 다른 계산</b>`;
-    highs.forEach((inc) => {
-      inner += `<div class="ins-inc">‘${esc(inc.concept)}’ · ${inc.definitions.map((d) => esc(d.where)).join(" ↔ ")}</div>`;
-    });
-    inner += `</div>`;
-  }
-  const bits = [];
-  if (infos.length) bits.push(`명명 참고 ${infos.length}`);
-  if (chains.length) bits.push(`의존 체인 ${chains.length}`);
-  if (cycles.length) bits.push(`순환 ${cycles.length}`);
-  if (named.length) bits.push(`정의된 이름 ${named.length}`);
-  if (bits.length) inner += `<p class="blk-note">${bits.join(" · ")} — 자세히는 <b>AI에게 넘기기</b>의 요약에서</p>`;
-  return blk("진단 · 관계와 불일치", inner, "card");
-}
-
-// 여러 시트에 흩어진 개념 묶음 — 개요에 작게
-function conceptsBlk() {
+// 파일 전체에서 발견한 것(개념·관계·확인할 점) — 개요 맨 아래, 기본은 접힘.
+// 시트별 내용이 아니라 '엑셀 전체' 이야기라 앞에 두지 않고 접어둔다.
+function fileScopeBlk() {
+  const ins = (DATA.summary && DATA.summary.insights) || {};
   const cons = (DATA.summary && DATA.summary.concepts) || [];
   const linked = cons.filter((c) => c.links > 0);
-  if (!linked.length) return "";
-  let inner = `<p class="blk-note" style="margin-top:0">같은 개념이 여러 시트에 흩어진 걸 하나로 묶었어요 (LLM 없이).</p>`;
-  inner += `<div class="cpt-chips">`;
-  linked.slice(0, 8).forEach((c) => {
-    inner += `<span class="cpt-chip">${esc(c.name)}<i>${c.links}</i></span>`;
-  });
-  inner += `</div>`;
-  const top = linked[0];
-  if (top) {
-    const ev = (top.evidence || []).slice(0, 4).map((e) => `<code>${esc(e)}</code>`).join(" ");
-    inner += `<p class="blk-note"><b>${esc(top.name)}</b> — ${ev} 등 ${top.evidence.length}곳을 한 객체로. 전체는 <b>AI에게 넘기기</b>의 요약에서.</p>`;
+  const highs = (ins.inconsistencies || []).filter((i) => i.severity === "high");
+  const chains = ins.chains || [], cycles = ins.cycles || [], named = ins.named_ranges || [];
+  if (!linked.length && !highs.length && !chains.length && !cycles.length && !named.length) return "";
+
+  const tags = [];
+  if (linked.length) tags.push(`개념 ${linked.length}`);
+  if (highs.length) tags.push(`확인할 점 ${highs.length}`);
+  const tagline = tags.length ? `<span class="fscope-tags">${tags.join(" · ")}</span>` : "";
+
+  let body = "";
+  if (linked.length) {
+    body += `<p class="fscope-h">여러 시트에 흩어진 같은 개념을 묶었어요</p><div class="cpt-chips">`;
+    linked.slice(0, 8).forEach((c) => { body += `<span class="cpt-chip">${esc(c.name)}<i>${c.links}</i></span>`; });
+    body += `</div>`;
   }
-  return blk("개념 · 흩어진 개념 묶기", inner, "card");
+  if (highs.length) {
+    body += `<p class="fscope-h">같은 이름인데 시트마다 계산이 달라요 — 한번 확인해보세요</p>`;
+    highs.forEach((inc) => {
+      body += `<p class="fscope-warn">‘${esc(inc.concept)}’ : ${inc.definitions.map((d) => esc(d.where)).join(" ↔ ")}</p>`;
+    });
+  }
+  const rel = [];
+  if (chains.length) rel.push(`계산이 계산을 부르는 흐름 ${chains.length}개`);
+  if (cycles.length) rel.push(`빙글빙글 도는 참조 ${cycles.length}개`);
+  if (named.length) rel.push(`이름 붙은 범위 ${named.length}개`);
+  if (rel.length) body += `<p class="fscope-note">${rel.join(" · ")}</p>`;
+  body += `<p class="fscope-note">전체 내용은 위 <b>AI에게 넘기기</b>의 요약에 담겨 있어요.</p>`;
+
+  return `<details class="fscope"><summary>이 엑셀 전체에서 발견한 것 ${tagline}</summary>`
+       + `<div class="fscope-body">${body}</div></details>`;
 }
 
 function interpOverview(sheet) {
@@ -514,9 +508,6 @@ function interpOverview(sheet) {
   // 이 시트는 무엇을 관리하는 문서인지 — 결정론적 한 문단
   const card = (DATA.summary && DATA.summary.sheets || []).find((c) => c.sheet === sheet.name);
   if (card && card.paragraph) h += blk("이 시트는", `<p class="blk-lead">${esc(card.paragraph)}</p>`, "card");
-
-  h += insightsBlk();          // 파일 전체 진단 (개요에 작게)
-  h += conceptsBlk();          // 흩어진 개념 묶음 (개요에 작게)
 
   if (sheet.regions.length) {
     const rows = sheet.regions.map((reg) => {
@@ -534,6 +525,7 @@ function interpOverview(sheet) {
     h += blk("다른 시트 참조",
       `<p class="blk-lead">이 시트는 <b>${sheet.refs_out.map(esc).join("</b>, <b>")}</b> 시트의 값을 끌어와 계산해요.</p>`, "");
   }
+  h += fileScopeBlk();         // 엑셀 전체 발견(개념·관계·확인할 점) — 맨 아래, 접힘
   h += `<p class="tip-line">왼쪽에서 <b>색칠된 표</b>나 <b>계산되는 값(셀)</b>을 누르면 여기서 풀어 설명해요.</p>`;
   return h;
 }
