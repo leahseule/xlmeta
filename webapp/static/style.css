@@ -122,8 +122,10 @@ code, .mono { font-family: var(--mono); }
 .feat-tx p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
 
 /* 하는 일(왼쪽) · 업로드(오른쪽) 나란히 */
-.landing-cols { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px;
+.landing-cols { display: grid; grid-template-columns: .95fr 1.05fr; gap: 40px;
   align-items: start; text-align: left; margin-top: 46px; }
+.col-upload { order: 1; }                     /* 왼쪽: 지금 올려보기 */
+.col-features { order: 2; }                   /* 오른쪽: xlmeta가 하는 일 */
 .col-features.showcase { margin: 0; max-width: none; }
 .landing-cols .showcase-eyebrow, .landing-cols .showcase-h { text-align: left; }
 .landing-cols .showcase-h { margin-bottom: 18px; }
@@ -132,7 +134,6 @@ code, .mono { font-family: var(--mono); }
 .col-upload .dropzone { padding: 60px 24px; }
 @media (max-width: 860px) {
   .landing-cols { grid-template-columns: 1fr; gap: 30px; }
-  .col-upload { order: -1; }                 /* 좁은 화면: 업로드 먼저 */
 }
 
 @media (prefers-reduced-motion: reduce) {
