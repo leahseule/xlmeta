@@ -200,7 +200,7 @@ table.xlgrid thead th { top: 0; }
 table.xlgrid tbody th { left: 0; }
 table.xlgrid thead th:first-child { left: 0; z-index: 2; }
 
-td.role-out { color: #c3c7cf; background: #fcfcfd; }
+td.role-out { color: #7f858f; background: #fcfcfd; }
 td.role-header { background: var(--accent-soft); font-weight: 600; }
 td.role-key { background: #eef3f0; }
 td.role-subtotal { background: var(--warn-bg); color: var(--warn-ink); }
@@ -210,9 +210,9 @@ td.t-n { color: #2b6cb0; }
 td.t-b { color: #9a6a12; }
 td.role-header.t-t { color: var(--ink); }
 
-/* 데이터 칸은 모두 클릭 가능 */
-.xlgrid td:not(.role-out) { cursor: pointer; }
-.xlgrid td:not(.role-out):hover { box-shadow: inset 0 0 0 1px rgba(47,111,237,.4); }
+/* 모든 칸 클릭 가능 (표 밖 텍스트도 눌러 내용 확인) */
+.xlgrid td { cursor: pointer; }
+.xlgrid td:not(.sel):hover { box-shadow: inset 0 0 0 1px rgba(47,111,237,.45); }
 /* 계산되는 값 셀 = 파란 점 표식 */
 td.calc { cursor: pointer; position: relative; }
 td.calc::after { content: ""; position: absolute; top: 2px; right: 2px; width: 4px; height: 4px;
@@ -228,7 +228,8 @@ td.is-title:hover { box-shadow: inset 0 2px 0 var(--sel), inset 0 0 0 1px rgba(4
 
 table.xlgrid.dimmed td:not(.sel):not(.selgroup):not(.role-out) { opacity: .4; }
 table.xlgrid.dimmed td.is-title { opacity: 1; }
-td.sel { background-image: linear-gradient(var(--sel-fill), var(--sel-fill)); }
+td.sel { background-image: linear-gradient(var(--sel-fill), var(--sel-fill));
+  box-shadow: inset 0 0 0 2px var(--sel); color: var(--ink); }
 td.selgroup { background-image: linear-gradient(rgba(47,111,237,.06), rgba(47,111,237,.06)); }
 
 /* 범례 */
