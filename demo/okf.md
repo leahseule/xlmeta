@@ -4,7 +4,7 @@ type: Knowledge Bundle
 title: sample_epc_cost.xlsx 지식 번들
 source_file: sample_epc_cost.xlsx
 description: 엑셀 수식에서 추론 없이 추출한 지표 정의 (단일 문서)
-timestamp: "2026-08-11T08:03:38Z"
+timestamp: "2026-08-11T08:57:22Z"
 derivation: deterministic-formula-parse
 ---
 
@@ -33,7 +33,7 @@ derivation: deterministic-formula-parse
 
 ## 진단 · 관계와 불일치
 
-### ⚠️ 정의 불일치 — 같은 개념을 다르게 계산
+### ⚠️ 정의 불일치 (HIGH) — 같은 단위인데 다르게 계산
 
 - **발생원가** 이(가) 2곳에서 다르게 계산돼요:
   - 원가현황 (2026년 7월): `=SUMIFS(실적!G:G,실적!C:C,A6,실적!F:F,"승인")`

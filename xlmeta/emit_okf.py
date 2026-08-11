@@ -293,6 +293,7 @@ def render_single(meta):
 
     if meta["sources"]:
         L += ["## 원천 표", ""]
+        seen_tb = {}
         for s in meta["sources"]:
             name = s["title"] or s["range"]
             L += [f"### {name}  `{s['range']}`  ({s['row_count']}행)", "",
@@ -303,7 +304,13 @@ def render_single(meta):
                 L += ["", f"> 소계/합계 행 {s['subtotal_rows']} — 지표 추출에서 제외됨."]
             tbs = _tables([s])
             if tbs:
-                L += ["", "**실제 데이터**", "", data_table_md(tbs[0])]
+                tb = tbs[0]
+                if not tb["all_blank"]:
+                    if tb["sig"] in seen_tb:
+                        tb["dup_of"] = seen_tb[tb["sig"]]
+                    else:
+                        seen_tb[tb["sig"]] = f"{tb['sheet']}!{tb['range']}"
+                L += ["", "**실제 데이터**", "", data_table_md(tb)]
             L.append("")
 
     if low:

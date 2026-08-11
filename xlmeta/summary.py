@@ -6,6 +6,7 @@ AI에게 넘길 공개 링크 페이지의 본문이 되고, 프리필 헤드라
 원시 데이터 값은 담지 않는다 — 구조·이름·수식·업무규칙만 (링크로 외부에 나가므로).
 """
 
+import hashlib
 from collections import defaultdict
 
 from . import explain as X
@@ -113,25 +114,38 @@ def _fmt_val(v):
 
 
 def _tables(srcs):
-    """표별 실제 데이터를 렌더용 구조(헤더+행)로."""
+    """표별 실제 데이터를 렌더용 구조(헤더+행)로.
+       전 셀 공백(캐시 없는 수식 열)은 표를 접고, 내용 지문(sig)을 달아 중복 접기에 쓴다."""
     out = []
     for s in srcs:
         d = s.get("data")
         if not d or not d["rows"]:
             continue
         names = s.get("columns") or {}
+        headers = [names.get(L, L) for L in d["col_letters"]]
+        rows = [[_fmt_val(v) for v in row["cells"]] for row in d["rows"]]
+        all_blank = all(all(c == "" for c in r) for r in rows)
+        content = "\n".join(["\t".join(headers)] + ["\t".join(r) for r in rows])
         out.append({
+            "sheet": s["sheet"],
             "range": s["range"].split("!")[-1],
             "title": s["title"],
-            "headers": [names.get(L, L) for L in d["col_letters"]],
-            "rows": [[_fmt_val(v) for v in row["cells"]] for row in d["rows"]],
+            "headers": headers,
+            "rows": [] if all_blank else rows,
+            "all_blank": all_blank,
+            "sig": hashlib.md5(content.encode("utf-8")).hexdigest()[:12],
+            "dup_of": None,
             "truncated": d["truncated"], "total_rows": d["total_rows"], "shown": len(d["rows"]),
         })
     return out
 
 
 def data_table_md(tb):
-    """렌더 구조 → 마크다운 표."""
+    """렌더 구조 → 마크다운 표. 빈 표·중복 표는 한 줄로 접는다."""
+    if tb.get("all_blank"):
+        return "> (데이터 없음 — 캐시값 없는 수식 열)"
+    if tb.get("dup_of"):
+        return f"> `{tb['dup_of']}` 와 내용 동일 (생략)"
     L = ["| " + " | ".join(tb["headers"]) + " |",
          "| " + " | ".join("---" for _ in tb["headers"]) + " |"]
     L += ["| " + " | ".join(r) + " |" for r in tb["rows"]]
@@ -169,6 +183,7 @@ def _card(name, srcs, metrics, fcell_refs, cell_graph):
         "formula": m["formula"],
         "functions": m.get("functions", []),
         "rules": _rules_of([m]),
+        "constants": m.get("constants", []),
         "ref_sheets": sorted({r["ref"].split("!")[0] for r in m.get("reads", [])
                               if "!" in r["ref"] and r["ref"].split("!")[0] != name}),
     } for m in named]
@@ -236,6 +251,17 @@ def summarize(meta):
     cards = [_card(name, by_src[name], by_metric[name],
                    by_fcell.get(name, []), meta["cell_graph"]) for name in order]
 
+    seen = {}                                # 시트 간 동일 표 접기 (토큰 절약)
+    for c in cards:
+        for tb in c.get("tables", []):
+            if tb["all_blank"]:
+                continue
+            if tb["sig"] in seen:
+                tb["dup_of"] = seen[tb["sig"]]
+                tb["rows"] = []
+            else:
+                seen[tb["sig"]] = f"{tb['sheet']}!{tb['range']}"
+
     return {
         "source_file": meta["source_file"],
         "tree": file_tree(meta),
@@ -285,7 +311,8 @@ def markdown(summary):
             L += ["**지표 · 업무규칙**", ""]
             for m in c["metrics"]:
                 rule = f" — 조건: {', '.join(m['rules'])}" if m["rules"] else ""
-                L.append(f"- **{m['title']}** `{m['formula']}`{rule}")
+                const = f" · 하드코딩 상수: {', '.join(str(x) for x in m['constants'])}" if m.get("constants") else ""
+                L.append(f"- **{m['title']}** `{m['formula']}`{rule}{const}")
             L.append("")
         for tb in c.get("tables", []):
             ttl = f" — {tb['title']}" if tb["title"] else ""

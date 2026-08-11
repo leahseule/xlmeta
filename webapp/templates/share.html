@@ -117,10 +117,12 @@
     {% if ins and (ins.inconsistencies or ins.chains or ins.cycles or ins.named_ranges) %}
     <section class="ins-sec">
       <p class="k">진단 · 관계와 불일치</p>
-      {% if ins.inconsistencies %}
+      {% set highs = ins.inconsistencies | selectattr('severity','equalto','high') | list %}
+      {% set infos = ins.inconsistencies | selectattr('severity','equalto','info') | list %}
+      {% if highs %}
       <div class="ins-warn">
-        <b>⚠️ 정의 불일치 — 같은 개념을 다르게 계산</b>
-        {% for inc in ins.inconsistencies %}
+        <b>⚠️ 정의 불일치 (HIGH) — 같은 단위인데 다르게 계산</b>
+        {% for inc in highs %}
         <div class="inc">
           <div class="inc-concept">{{ inc.concept }} — {{ inc.definitions|length }}곳에서 다르게 계산됨</div>
           {% for d in inc.definitions %}
@@ -129,6 +131,10 @@
         </div>
         {% endfor %}
       </div>
+      {% endif %}
+      {% if infos %}
+      <p class="ins-h">명명 참고 (INFO) — 같은 라벨, 다른 집계 단위(입도)</p>
+      <ul>{% for i in infos %}<li>{{ i.concept }} <span class="pill">{{ i.definitions|length }}곳 · 입도 다름</span></li>{% endfor %}</ul>
       {% endif %}
       {% if ins.chains %}
       <p class="ins-h">의존 체인 (몇 단계 계산인지)</p>
@@ -176,23 +182,30 @@
         <div class="metric">
           <b>{{ m.title }}</b> <code>{{ m.formula }}</code>
           {% if m.rules %}<div class="rule">조건: {{ m.rules|join(', ') }}</div>{% endif %}
+          {% if m.constants %}<div class="rule">하드코딩 상수: {{ m.constants|join(', ') }}</div>{% endif %}
         </div>
         {% endfor %}
       {% endif %}
 
       {% for tb in c.tables %}
         <p class="k">실제 데이터 · {{ tb.range }}{% if tb.title %} — {{ tb.title }}{% endif %}</p>
-        <div class="tbl-wrap">
-          <table class="dtable">
-            <thead><tr>{% for h in tb.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
-            <tbody>
-              {% for row in tb.rows %}
-              <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% if tb.truncated %}<p class="rule">전체 {{ tb.total_rows }}행 중 {{ tb.shown }}행 표시</p>{% endif %}
+        {% if tb.all_blank %}
+          <p class="rule">(데이터 없음 — 캐시값 없는 수식 열)</p>
+        {% elif tb.dup_of %}
+          <p class="rule"><code>{{ tb.dup_of }}</code> 와 내용 동일 (생략)</p>
+        {% else %}
+          <div class="tbl-wrap">
+            <table class="dtable">
+              <thead><tr>{% for h in tb.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+              <tbody>
+                {% for row in tb.rows %}
+                <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if tb.truncated %}<p class="rule">전체 {{ tb.total_rows }}행 중 {{ tb.shown }}행 표시</p>{% endif %}
+        {% endif %}
       {% endfor %}
     </section>
     {% endfor %}

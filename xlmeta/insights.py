@@ -100,6 +100,32 @@ def _chains(by_id, name, in_cycle):
     return out
 
 
+def _sig(m):
+    """정의를 비교 가능한 성분으로 분해: 집계함수 · 집계단위(grouping) · 필터 · 대상열."""
+    agg = next((f for f in m.get("functions", []) if f in X.AGG_VERB), None)
+    grouping = tuple(sorted((c.get("target_name") or _col(c.get("target_ref", "")))
+                            for c in m.get("conditions", []) if c.get("kind") == "match_key"))
+    filters = tuple(sorted(f"{c.get('target_name') or _col(c.get('target_ref', ''))}"
+                           f"{c.get('operator')}{c.get('value')}"
+                           for c in m.get("conditions", []) if c.get("kind") == "business_rule"))
+    target = None
+    if m.get("reads"):
+        r0 = m["reads"][0]
+        target = r0.get("name") or _col(r0["ref"])
+    return {"agg": agg, "grouping": grouping, "filters": filters,
+            "target": target, "canonical": canonical(m)}
+
+
+def _pair_severity(a, b):
+    """두 정의 차이의 심각도. 집계단위(grouping)가 다르면 입도 차이(INFO),
+       같은 단위인데 집계함수·조건·대상열이 다르면 진짜 버그(HIGH)."""
+    if a["grouping"] != b["grouping"]:
+        return "info"                       # 입도가 다름 = 같은 라벨 다른 집계 단위
+    if a["agg"] != b["agg"] or a["filters"] != b["filters"] or a["target"] != b["target"]:
+        return "high"                       # 같은 단위인데 집계·조건·대상이 다름
+    return None
+
+
 def _inconsistencies(metrics):
     by_title = defaultdict(list)
     for m in metrics:
@@ -111,16 +137,28 @@ def _inconsistencies(metrics):
     for concept, ms in by_title.items():
         if len(ms) < 2:
             continue
-        if len({canonical(m) for m in ms}) > 1:         # 같은 이름인데 정의가 다름
-            out.append({
-                "concept": concept,
-                "definitions": [{
-                    "where": m["region_title"] or m["sheet"],
-                    "cell": m["anchor_cell"],
-                    "formula": m["formula"],
-                    "canonical": canonical(m),
-                } for m in ms],
-            })
+        distinct = {}                        # 복제본은 canonical로 collapse
+        for m in ms:
+            s = _sig(m)
+            distinct.setdefault(s["canonical"], (s, m))
+        if len(distinct) < 2:
+            continue                         # 전부 복제 → 불일치 아님(억제)
+        sigs = [v[0] for v in distinct.values()]
+        sev = "info"
+        for i in range(len(sigs)):
+            for j in range(i + 1, len(sigs)):
+                if _pair_severity(sigs[i], sigs[j]) == "high":
+                    sev = "high"
+        out.append({
+            "concept": concept,
+            "severity": sev,
+            "definitions": [{
+                "where": m["region_title"] or m["sheet"],
+                "cell": m["anchor_cell"],
+                "formula": m["formula"],
+            } for (_s, m) in distinct.values()],
+        })
+    out.sort(key=lambda x: 0 if x["severity"] == "high" else 1)
     return out
 
 
@@ -129,12 +167,18 @@ def insights_md(ins):
     if not ins or not any([ins["inconsistencies"], ins["chains"], ins["cycles"], ins["named_ranges"]]):
         return ""
     L = ["## 진단 · 관계와 불일치", ""]
-    if ins["inconsistencies"]:
-        L += ["### ⚠️ 정의 불일치 — 같은 개념을 다르게 계산", ""]
-        for inc in ins["inconsistencies"]:
+    highs = [i for i in ins["inconsistencies"] if i["severity"] == "high"]
+    infos = [i for i in ins["inconsistencies"] if i["severity"] == "info"]
+    if highs:
+        L += ["### ⚠️ 정의 불일치 (HIGH) — 같은 단위인데 다르게 계산", ""]
+        for inc in highs:
             L.append(f"- **{inc['concept']}** 이(가) {len(inc['definitions'])}곳에서 다르게 계산돼요:")
             for d in inc["definitions"]:
                 L.append(f"  - {d['where']}: `{d['formula']}`")
+        L.append("")
+    if infos:
+        L += ["### 명명 참고 (INFO) — 같은 라벨, 다른 집계 단위(입도)", ""]
+        L += [f"- {i['concept']} ({len(i['definitions'])}곳, 집계 단위가 달라 값이 다름)" for i in infos]
         L.append("")
     if ins["chains"]:
         L += ["### 의존 체인 (몇 단계 계산인지)", ""]

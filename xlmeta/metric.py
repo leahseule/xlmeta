@@ -254,9 +254,12 @@ def extract(path):
         "title": p.title or None,
     }
 
-    named_ranges = []                        # 엑셀 정의된 이름 (named range)
+    named_ranges = []                        # 사용자 정의 이름만 (차트·인쇄영역 등 내부 이름 제외)
+    _skip = ("Print_Area", "Print_Titles", "_FilterDatabase")
     try:
         for nm, dn in book.wbf.defined_names.items():
+            if nm.startswith("_") or any(s in nm for s in _skip):
+                continue                     # _xlchart·_xlfn·_xlnm·인쇄영역 = 노이즈
             val = getattr(dn, "value", None) or getattr(dn, "attr_text", None)
             named_ranges.append({"name": nm, "refers_to": str(val)})
     except Exception:                        # noqa: BLE001
