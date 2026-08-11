@@ -99,6 +99,46 @@ def _paragraph(name, regions, named, n_formula, n_manual):
     return " ".join(S)
 
 
+def _fmt_val(v):
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return "TRUE" if v else "FALSE"
+    if isinstance(v, int) or (isinstance(v, float) and float(v).is_integer()):
+        return f"{int(v):,}"
+    if isinstance(v, float):
+        return f"{round(v, 4):,}"
+    return str(v).replace("|", "\\|").replace("\n", " ")
+
+
+def _tables(srcs):
+    """표별 실제 데이터를 렌더용 구조(헤더+행)로."""
+    out = []
+    for s in srcs:
+        d = s.get("data")
+        if not d or not d["rows"]:
+            continue
+        names = s.get("columns") or {}
+        out.append({
+            "range": s["range"].split("!")[-1],
+            "title": s["title"],
+            "headers": [names.get(L, L) for L in d["col_letters"]],
+            "rows": [[_fmt_val(v) for v in row["cells"]] for row in d["rows"]],
+            "truncated": d["truncated"], "total_rows": d["total_rows"], "shown": len(d["rows"]),
+        })
+    return out
+
+
+def data_table_md(tb):
+    """렌더 구조 → 마크다운 표."""
+    L = ["| " + " | ".join(tb["headers"]) + " |",
+         "| " + " | ".join("---" for _ in tb["headers"]) + " |"]
+    L += ["| " + " | ".join(r) + " |" for r in tb["rows"]]
+    if tb["truncated"]:
+        L.append(f"\n> 전체 {tb['total_rows']}행 중 {tb['shown']}행만 표시")
+    return "\n".join(L)
+
+
 def _card(name, srcs, metrics, fcell_refs, cell_graph):
     regions = [{
         "range": s["range"].split("!")[-1],
@@ -142,6 +182,7 @@ def _card(name, srcs, metrics, fcell_refs, cell_graph):
         "formula_examples": examples,
         "metrics": metric_cards,
         "manual_count": n_manual,
+        "tables": _tables(srcs),
     }
 
 
@@ -211,9 +252,9 @@ def summarize(meta):
 def markdown(summary):
     """공개 페이지·복사용 마크다운. 사람도 AI도 그대로 읽는다."""
     t = summary["totals"]
-    L = [f"# {summary['source_file']} — 엑셀 구조 요약", "",
+    L = [f"# {summary['source_file']} — 엑셀 구조 + 데이터", "",
          "> xlmeta가 수식·레이아웃에서 (LLM 없이) 결정론적으로 추출했습니다. "
-         "재실행하면 같은 결과. 원시 데이터 값은 담지 않고 구조·규칙만 담습니다.", "",
+         "재실행하면 같은 결과. 구조·규칙과 함께 **실제 데이터**를 담습니다.", "",
          f"**한눈에** · 시트 {t['sheets']}개 · 표 {t['tables']}개 · "
          f"지표 {t['metrics']}개 · 수식 셀 {t['formula_cells']}개", ""]
     if summary.get("tree"):
@@ -248,6 +289,9 @@ def markdown(summary):
                 rule = f" — 조건: {', '.join(m['rules'])}" if m["rules"] else ""
                 L.append(f"- **{m['title']}** `{m['formula']}`{rule}")
             L.append("")
+        for tb in c.get("tables", []):
+            ttl = f" — {tb['title']}" if tb["title"] else ""
+            L += [f"**실제 데이터 · {tb['range']}**{ttl}", "", data_table_md(tb), ""]
     return "\n".join(L).rstrip() + "\n"
 
 

@@ -33,7 +33,7 @@ from xlmeta import summary as XS                    # noqa: E402
 from xlmeta.emit_okf import slug                   # noqa: E402
 from xlmeta.layout import analyze_sheet, cell_type  # noqa: E402
 from xlmeta import formula as F                     # noqa: E402
-from evaluate import Evaluator                       # noqa: E402
+from xlmeta.evaluate import Evaluator               # noqa: E402
 import make_sample                                 # noqa: E402
 
 app = Flask(__name__)
@@ -202,7 +202,7 @@ def _md_key_for_source(s):
 
 def analyze_path(xlsx_path):
     """엑셀 경로 → 화면이 쓸 JSON 묶음. 번들은 임시 폴더에 쓰고 읽어들인다."""
-    meta = extract(xlsx_path)
+    meta = extract(xlsx_path)   # 데이터 값(수식 계산 포함)은 코어에서 채워진다
 
     with tempfile.TemporaryDirectory() as outdir:
         stats = write_bundle(meta, outdir)

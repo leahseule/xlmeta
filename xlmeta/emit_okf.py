@@ -8,7 +8,7 @@ import os
 import re
 from datetime import datetime, timezone
 
-from .summary import file_tree
+from .summary import file_tree, _tables, data_table_md
 
 
 def slug(s, fallback="unnamed"):
@@ -296,6 +296,9 @@ def render_single(meta):
                 L.append(f"| `{col}` | {nm} |")
             if s["subtotal_rows"]:
                 L += ["", f"> 소계/합계 행 {s['subtotal_rows']} — 지표 추출에서 제외됨."]
+            tbs = _tables([s])
+            if tbs:
+                L += ["", "**실제 데이터**", "", data_table_md(tbs[0])]
             L.append("")
 
     if low:

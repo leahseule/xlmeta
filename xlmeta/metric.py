@@ -12,6 +12,7 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 
 from . import formula as F
 from . import explain as X
+from .evaluate import Evaluator
 from .layout import analyze_sheet
 
 
@@ -198,6 +199,21 @@ def _link(metrics):
         m.setdefault("used_by", [])
 
 
+MAX_DATA_ROWS = 200
+
+
+def _table_data(ev, sheet, reg):
+    """표의 실제 데이터 행·값. 머리글 행은 빼고, 수식은 계산값으로 채운다
+       (Evaluator가 수식은 계산, 일반 셀은 원값을 돌려줌)."""
+    cols = list(range(reg.c0, reg.c1 + 1))
+    col_letters = [get_column_letter(c) for c in cols]
+    data_rows = [r for r in range(reg.r0, reg.r1 + 1) if r not in reg.header_rows]
+    rows = [{"r": r, "cells": [ev.value(sheet, r, c) for c in cols]}
+            for r in data_rows[:MAX_DATA_ROWS]]
+    return {"col_letters": col_letters, "rows": rows,
+            "total_rows": len(data_rows), "truncated": len(data_rows) > MAX_DATA_ROWS}
+
+
 def extract(path):
     book = Book(path)
     metrics, cell_graph, unsupported = build_metrics(book)
@@ -208,6 +224,7 @@ def extract(path):
         m["python"] = X.pythonize(m)
         m["functions_doc"] = X.functions_doc(m["functions"])
 
+    ev = Evaluator(book.wbf)                 # 수식 계산값 산출 (데이터 값 채우기용)
     sources = []
     for sheet, regs in book.layout.items():
         for reg in regs:
@@ -224,6 +241,7 @@ def extract(path):
                 "subtotal_rows": reg.subtotal_rows,
                 "row_count": reg.r1 - reg.r0 + 1 - len(reg.header_rows),
                 "layout_confidence": reg.confidence,
+                "data": _table_data(ev, sheet, reg),   # 실제 데이터 행·값 (수식은 계산값)
             })
     p = book.wbf.properties
     _d = lambda x: x.strftime("%Y-%m-%d") if x else None

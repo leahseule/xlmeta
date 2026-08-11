@@ -3,7 +3,7 @@ okf_version: 0.1
 type: Knowledge Bundle
 title: sample_epc_cost.xlsx 지표 정의
 description: 엑셀 수식에서 추론 없이 추출한 지표 정의
-timestamp: "2026-08-11T03:04:06Z"
+timestamp: "2026-08-11T07:04:30Z"
 ---
 
 # 목차

@@ -56,6 +56,13 @@
     .tree{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
       font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-x:auto;white-space:pre;
       margin:6px 0 0;color:var(--ink);}
+    .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:6px 0 0;}
+    .dtable{border-collapse:collapse;width:100%;font-size:12.5px;}
+    .dtable th,.dtable td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);
+      padding:6px 10px;text-align:left;white-space:nowrap;}
+    .dtable th{background:var(--soft);font-weight:600;}
+    .dtable tr:last-child td{border-bottom:none;}
+    .dtable td:last-child,.dtable th:last-child{border-right:none;}
     footer{border-top:1px solid var(--line);margin-top:36px;padding-top:16px;
       color:var(--muted);font-size:12.5px;}
     footer a{color:var(--accent);text-decoration:none;}
@@ -78,8 +85,9 @@
         내용 복사하기
       </button>
     </header>
-    <p class="lead">엑셀 수식·레이아웃에서 <b>LLM 없이 결정론적으로</b> 추출했습니다. 재실행하면 같은 결과이며,
-      원시 데이터 값은 담지 않고 <b>구조·이름·수식·업무규칙</b>만 담습니다.</p>
+    <p class="lead">엑셀 수식·레이아웃에서 <b>LLM 없이 결정론적으로</b> 추출했습니다.
+      구조·규칙과 함께 <b>실제 데이터</b>도 담겨 AI가 바로 분석할 수 있습니다.
+      <b style="color:var(--warn-ink)">이 링크가 공개되면 데이터도 함께 보이니</b> 민감한 파일은 주의하세요.</p>
 
     <div class="totals">
       <span class="t">시트 {{ summary.totals.sheets }}</span>
@@ -135,6 +143,21 @@
         </div>
         {% endfor %}
       {% endif %}
+
+      {% for tb in c.tables %}
+        <p class="k">실제 데이터 · {{ tb.range }}{% if tb.title %} — {{ tb.title }}{% endif %}</p>
+        <div class="tbl-wrap">
+          <table class="dtable">
+            <thead><tr>{% for h in tb.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              {% for row in tb.rows %}
+              <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if tb.truncated %}<p class="rule">전체 {{ tb.total_rows }}행 중 {{ tb.shown }}행 표시</p>{% endif %}
+      {% endfor %}
     </section>
     {% endfor %}
 
