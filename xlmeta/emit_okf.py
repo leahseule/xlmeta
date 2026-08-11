@@ -244,8 +244,10 @@ def render_single(meta):
         "description": "엑셀 수식에서 추론 없이 추출한 지표 정의 (단일 문서)",
         "timestamp": now, "derivation": "deterministic-formula-parse",
     }), "",
-        f"# {src} — 엑셀 지식 번들", "",
-        "엑셀 수식·레이아웃에서 (LLM 없이) 결정론적으로 추출했습니다. 재실행하면 같은 결과.", "",
+        f"# {src} — 스프레드시트 지식 표현", "",
+        "*Spreadsheet Knowledge Representation* — 엑셀 수식·레이아웃에서 (LLM 없이) "
+        "결정론적으로 추출했습니다. 재실행하면 같은 결과. "
+        "구조·실제 데이터·계산 규칙·계산 계보·불일치·개념을 한 문서로 담습니다.", "",
         f"**요약** · 지표 {len(used)}건 · 원천 표 {len(meta['sources'])}개 · 수식 셀 {len(meta['cell_graph'])}개", "",
         "## 구조 (파일 → 시트 → 표 → 컬럼)", "", "```text", file_tree(meta), "```", ""]
 

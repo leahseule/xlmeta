@@ -286,9 +286,10 @@ def summarize(meta):
 def markdown(summary):
     """공개 페이지·복사용 마크다운. 사람도 AI도 그대로 읽는다."""
     t = summary["totals"]
-    L = [f"# {summary['source_file']} — 엑셀 구조 + 데이터", "",
-         "> xlmeta가 수식·레이아웃에서 (LLM 없이) 결정론적으로 추출했습니다. "
-         "재실행하면 같은 결과. 구조·규칙과 함께 **실제 데이터**를 담습니다.", "",
+    L = [f"# {summary['source_file']} — 스프레드시트 지식 표현", "",
+         "> *Spreadsheet Knowledge Representation* — xlmeta가 수식·레이아웃에서 "
+         "(LLM 없이) 결정론적으로 추출했습니다. 재실행하면 같은 결과. **구조·실제 데이터·"
+         "계산 규칙·계산 계보(lineage)·불일치·개념**을 하나의 문서로 담습니다.", "",
          f"**한눈에** · 시트 {t['sheets']}개 · 표 {t['tables']}개 · "
          f"지표 {t['metrics']}개 · 수식 셀 {t['formula_cells']}개", ""]
     if summary.get("tree"):
@@ -346,8 +347,9 @@ def headline(summary, url):
 def prefill(summary, markdown_text, url, cap=5000):
     """AI에게 바로 넣을 프리필: 구조 + 실제 데이터를 직접 담는다.
        URL이 길어지지 않게 cap까지만 담고, 넘치면 잘라 링크로 전체 안내."""
-    intro = (f"아래는 ‘{summary['source_file']}’ 엑셀에서 LLM 없이 결정론적으로 뽑은 "
-             "구조와 실제 데이터야. 이걸 근거로 분석·답변하고, 여기 없는 건 모른다고 해줘.\n\n")
+    intro = (f"아래는 ‘{summary['source_file']}’ 엑셀을 LLM 없이 결정론적으로 표현한 "
+             "지식이야 — 구조·실제 데이터·계산 규칙·계보·불일치·개념까지. "
+             "이걸 근거로 분석·답변하고, 여기 없는 건 모른다고 해줘.\n\n")
     body = markdown_text.strip()
     if len(body) > cap:
         body = body[:cap].rstrip() + "\n\n…(이하 생략 — 전체·원본은 아래 링크에서)"
