@@ -406,8 +406,8 @@ function aiHandoffBlk() {
   return blk("AI에게 넘기기",
     `<p class="blk-lead">이 엑셀의 <b>구조·업무규칙 요약</b>을 만들었어요 (시트 ${s.totals.sheets}·표 ${s.totals.tables}·지표 ${s.totals.metrics}). 버튼을 누르면 그 요약 링크가 담긴 채 대화가 열려요.</p>
      <div class="ai-actions">
-       <a class="btn ai" href="${claude}" target="_blank" rel="noopener">Claude에게 열기</a>
-       <a class="btn ai" href="${gpt}" target="_blank" rel="noopener">ChatGPT에게 열기</a>
+       <a class="btn ai" href="${claude}" target="_blank" rel="noopener">Claude에서 열기</a>
+       <a class="btn ai" href="${gpt}" target="_blank" rel="noopener">ChatGPT에서 열기</a>
        <a class="btn ghost" href="${esc(s.path)}" target="_blank" rel="noopener">요약 페이지 보기</a>
      </div>
      <div class="ai-links">
