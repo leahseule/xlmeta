@@ -145,6 +145,38 @@ def _card(name, srcs, metrics, fcell_refs, cell_graph):
     }
 
 
+def file_tree(meta):
+    """엑셀 전체 구조를 트리로: 파일 → (만든 사람) → 시트 → 표 → 컬럼."""
+    src = meta["source_file"]
+    p = meta.get("properties") or {}
+    by_sheet = defaultdict(list)
+    for s in meta["sources"]:
+        by_sheet[s["sheet"]].append(s)
+    sheets = meta.get("sheets") or list(dict.fromkeys(s["sheet"] for s in meta["sources"]))
+
+    lines = [f"파일: {src}"]
+    who = p.get("creator") or p.get("last_modified_by")
+    bits = ([f"만든 사람 {who}"] if who else []) + ([f"수정 {p['modified']}"] if p.get("modified") else [])
+    if bits:
+        lines.append(" · ".join(bits))
+    lines.append(f"시트 {len(sheets)}개")
+    for si, name in enumerate(sheets):
+        last_s = si == len(sheets) - 1
+        s_br, s_co = ("└─ ", "   ") if last_s else ("├─ ", "│  ")
+        srcs = by_sheet.get(name, [])
+        lines.append(f"{s_br}{name}" + (f"  (표 {len(srcs)}개)" if srcs else "  (표 없음)"))
+        for ti, s in enumerate(srcs):
+            last_t = ti == len(srcs) - 1
+            t_br, t_co = ("└─ ", "   ") if last_t else ("├─ ", "│  ")
+            tname = s["title"] or s["range"].split("!")[-1]
+            lines.append(f"{s_co}{t_br}표: {tname}  ({s['row_count']}행)")
+            cols = list(s["columns"].values())
+            if cols:
+                shown = ", ".join(cols[:12]) + (f" 외 {len(cols) - 12}개" if len(cols) > 12 else "")
+                lines.append(f"{s_co}{t_co}└─ 컬럼: {shown}")
+    return "\n".join(lines)
+
+
 def summarize(meta):
     """extract() 결과 → 시트별 요약 카드 묶음."""
     by_src = defaultdict(list)
@@ -163,6 +195,8 @@ def summarize(meta):
 
     return {
         "source_file": meta["source_file"],
+        "tree": file_tree(meta),
+        "properties": meta.get("properties") or {},
         "sheets": cards,
         "totals": {
             "sheets": len(cards),
@@ -181,6 +215,8 @@ def markdown(summary):
          "재실행하면 같은 결과. 원시 데이터 값은 담지 않고 구조·규칙만 담습니다.", "",
          f"**한눈에** · 시트 {t['sheets']}개 · 표 {t['tables']}개 · "
          f"지표 {t['metrics']}개 · 수식 셀 {t['formula_cells']}개", ""]
+    if summary.get("tree"):
+        L += ["## 구조 (파일 → 시트 → 표 → 컬럼)", "", "```text", summary["tree"], "```", ""]
     for c in summary["sheets"]:
         L += ["---", "", f"## 시트: {c['sheet']}", "", c["paragraph"], ""]
         if c["regions"]:

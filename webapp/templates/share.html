@@ -45,6 +45,10 @@
       background:var(--soft);border:1px solid var(--line);margin:0 4px 4px 0;}
     .metric{margin:6px 0;}
     .rule{color:var(--muted);font-size:13px;}
+    .tree-sec{margin:2px 0 6px;}
+    .tree{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+      font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-x:auto;white-space:pre;
+      margin:6px 0 0;color:var(--ink);}
     footer{border-top:1px solid var(--line);margin-top:36px;padding-top:16px;
       color:var(--muted);font-size:12.5px;}
     footer a{color:var(--accent);text-decoration:none;}
@@ -72,6 +76,13 @@
       <button onclick="copyMd()">요약 마크다운 복사</button>
       <span class="lead" style="margin:0;">AI에게 이 페이지 링크를 주면 이 내용을 읽고 답합니다.</span>
     </div>
+
+    {% if summary.tree %}
+    <section class="tree-sec">
+      <p class="k">구조 · 파일 → 시트 → 표 → 컬럼</p>
+      <pre class="tree">{{ summary.tree }}</pre>
+    </section>
+    {% endif %}
 
     {% for c in summary.sheets %}
     <section class="sheet">

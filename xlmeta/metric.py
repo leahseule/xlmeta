@@ -225,9 +225,20 @@ def extract(path):
                 "row_count": reg.r1 - reg.r0 + 1 - len(reg.header_rows),
                 "layout_confidence": reg.confidence,
             })
+    p = book.wbf.properties
+    _d = lambda x: x.strftime("%Y-%m-%d") if x else None
+    properties = {
+        "creator": p.creator or None,
+        "last_modified_by": p.lastModifiedBy or None,
+        "created": _d(p.created),
+        "modified": _d(p.modified),
+        "title": p.title or None,
+    }
+
     return {
         "source_file": os.path.basename(path),
         "generated_by": "xlmeta 0.1 (no LLM)",
+        "properties": properties,
         "sheets": [ws.title for ws in book.wbf.worksheets],
         "sources": sources,
         "metrics": metrics,

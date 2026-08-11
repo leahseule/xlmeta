@@ -4,7 +4,7 @@ type: Knowledge Bundle
 title: sample_epc_cost.xlsx 지식 번들
 source_file: sample_epc_cost.xlsx
 description: 엑셀 수식에서 추론 없이 추출한 지표 정의 (단일 문서)
-timestamp: "2026-08-11T02:37:02Z"
+timestamp: "2026-08-11T02:58:55Z"
 derivation: deterministic-formula-parse
 ---
 
@@ -13,6 +13,20 @@ derivation: deterministic-formula-parse
 엑셀 수식·레이아웃에서 (LLM 없이) 결정론적으로 추출했습니다. 재실행하면 같은 결과.
 
 **요약** · 지표 5건 · 원천 표 2개 · 수식 셀 35개
+
+## 구조 (파일 → 시트 → 표 → 컬럼)
+
+```text
+파일: sample_epc_cost.xlsx
+만든 사람 openpyxl · 수정 2026-08-04
+시트 2개
+├─ 실적  (표 1개)
+│  └─ 표: A1:G17  (16행)
+│     └─ 컬럼: 일자, 전표번호, 프로젝트코드, 계정, 거래처, 결재상태, 금액
+└─ 원가현황  (표 1개)
+   └─ 표: 원가현황 (2026년 7월)  (7행)
+      └─ 컬럼: 프로젝트코드, 프로젝트명, 계약금액, 발생원가, 직접원가, 예산, 집행률, 예비비, 총투입예상, 비고
+```
 
 ## 지표
 
