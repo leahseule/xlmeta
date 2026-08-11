@@ -303,3 +303,14 @@ def headline(summary, url):
             "표·핵심 컬럼·수식·업무규칙을 이 링크에 정리해뒀어. "
             "이걸 근거로 내 질문에 답하고, 요약에 없는 건 모른다고 해줘. "
             f"링크를 못 열면 알려줘.\n{url}")
+
+
+def prefill(summary, markdown_text, url, cap=5000):
+    """AI에게 바로 넣을 프리필: 구조 + 실제 데이터를 직접 담는다.
+       URL이 길어지지 않게 cap까지만 담고, 넘치면 잘라 링크로 전체 안내."""
+    intro = (f"아래는 ‘{summary['source_file']}’ 엑셀에서 LLM 없이 결정론적으로 뽑은 "
+             "구조와 실제 데이터야. 이걸 근거로 분석·답변하고, 여기 없는 건 모른다고 해줘.\n\n")
+    body = markdown_text.strip()
+    if len(body) > cap:
+        body = body[:cap].rstrip() + "\n\n…(이하 생략 — 전체·원본은 아래 링크에서)"
+    return f"{intro}{body}\n\n원본·전체: {url}"

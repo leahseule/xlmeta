@@ -236,7 +236,7 @@ def analyze_path(xlsx_path):
         "path": "/s/" + sid,
         "url": share_url,
         "markdown": summ_md,
-        "prefill": XS.headline(summ, share_url),
+        "prefill": XS.prefill(summ, summ_md, share_url),
         "totals": summ["totals"],
     }
 

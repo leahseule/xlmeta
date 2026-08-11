@@ -409,7 +409,7 @@ function aiHandoffBlk() {
   const claude = `https://claude.ai/new?q=${q}`;
   const gpt = `https://chatgpt.com/?q=${q}`;
   return blk("AI에게 넘기기",
-    `<p class="blk-lead">이 엑셀의 <b>구조·업무규칙 요약</b>을 만들었어요 (시트 ${s.totals.sheets}·표 ${s.totals.tables}·지표 ${s.totals.metrics}). 버튼을 누르면 그 요약 링크가 담긴 채 대화가 열려요.</p>
+    `<p class="blk-lead">이 엑셀의 <b>구조 + 실제 데이터</b>를 정리했어요 (시트 ${s.totals.sheets}·표 ${s.totals.tables}·지표 ${s.totals.metrics}). 버튼을 누르면 그 내용이 담긴 채 대화가 열려요.</p>
      <div class="ai-actions">
        <a class="btn ai" href="${claude}" target="_blank" rel="noopener">Claude에서 열기</a>
        <a class="btn ai" href="${gpt}" target="_blank" rel="noopener">ChatGPT에서 열기</a>
@@ -419,7 +419,7 @@ function aiHandoffBlk() {
        <button class="act-chip" data-copy="${esc(s.prefill)}">${IC_COPY} AI에게 보낼 문구 복사</button>
        <button class="act-chip" data-copy="${esc(s.url)}">${IC_COPY} 링크만 복사</button>
      </div>
-     <p class="blk-note">버튼이 자동으로 안 열리면, 위 <b>문구를 복사</b>해 AI 대화창에 붙여넣으면 돼요. AI가 링크를 읽으려면 <b>공개 주소</b>여야 해요(배포된 주소에서 동작).</p>`,
+     <p class="blk-note">구조·데이터가 <b>문구에 직접</b> 담겨요(길면 잘리고, 전체는 링크로). 버튼이 자동으로 안 열리면 문구를 복사해 붙여넣으면 돼요.</p>`,
     "card");
 }
 
@@ -428,8 +428,7 @@ function okfBlk() {
   const okf = DATA.okf_single || "";
   if (!okf) return "";
   return blk("OKF · 엑셀 파일 전체 (한 문서)",
-    `<p class="blk-lead">엑셀 전체 지식을 <b>하나의 문서</b>로 합쳤어요 — 지표마다 흩어지지 않아, 에이전트가 한 번에 읽어요.</p>
-     <div class="okf-bar">
+    `<div class="okf-bar">
        <button class="act-chip" id="okfCopy">${IC_COPY} 전체 복사</button>
        <button class="act-chip" id="okfDownload">${IC_DOWN} .md 내려받기</button>
      </div>
