@@ -270,13 +270,6 @@ def markdown(summary):
                         else " · 구조 확인 권장")
                 L.append(f"- `{r['range']}` ({r['row_count']}행){ttl}{warn}")
             L.append("")
-        if c["key_columns"]:
-            L += [f"**핵심 컬럼(행 식별)**: {', '.join(c['key_columns'])}", ""]
-        headers = []
-        for r in c["regions"]:
-            headers += [x for x in r["columns"] if x not in headers]
-        if headers:
-            L += [f"**헤더(열 이름)**: {', '.join(headers)}", ""]
         if c["formula_cell_count"]:
             L += [f"**수식 셀**: {c['formula_cell_count']}개"
                   + (f", 사람이 직접 넣은 값 {c['manual_count']}개" if c["manual_count"] else "")]

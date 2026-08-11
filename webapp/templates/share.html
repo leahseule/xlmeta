@@ -120,11 +120,6 @@
         </ul>
       {% endif %}
 
-      {% if c.key_columns %}
-        <p class="k">핵심 컬럼 (행 식별)</p>
-        <p>{% for k in c.key_columns %}<span class="pill">{{ k }}</span>{% endfor %}</p>
-      {% endif %}
-
       {% if c.formula_cell_count %}
         <p class="k">수식 셀 · {{ c.formula_cell_count }}개{% if c.manual_count %} · 사람이 직접 넣은 값 {{ c.manual_count }}개{% endif %}</p>
         <ul>
