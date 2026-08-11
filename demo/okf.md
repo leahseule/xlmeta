@@ -4,7 +4,7 @@ type: Knowledge Bundle
 title: sample_epc_cost.xlsx 지식 번들
 source_file: sample_epc_cost.xlsx
 description: 엑셀 수식에서 추론 없이 추출한 지표 정의 (단일 문서)
-timestamp: "2026-08-11T08:57:22Z"
+timestamp: "2026-08-11T09:09:24Z"
 derivation: deterministic-formula-parse
 ---
 
@@ -208,3 +208,9 @@ sum(row["금액"] for row in 실적 if row["프로젝트코드"] == 이_행["프
 | P-2403 | 252,000,000 |
 | P-2404 | 580,000,000 |
 | P-2405 | 330,000,000 |
+
+## 표 밖 내용 (표로 안 잡힌 셀)
+
+### 원가현황
+
+- `A4`: 원가현황 (2026년 7월)

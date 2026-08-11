@@ -8,7 +8,7 @@ import os
 import re
 from datetime import datetime, timezone
 
-from .summary import file_tree, _tables, data_table_md
+from .summary import file_tree, _tables, data_table_md, _fmt_val
 from .insights import insights_md
 
 
@@ -311,6 +311,13 @@ def render_single(meta):
                     else:
                         seen_tb[tb["sig"]] = f"{tb['sheet']}!{tb['range']}"
                 L += ["", "**실제 데이터**", "", data_table_md(tb)]
+            L.append("")
+
+    if meta.get("extra_cells"):
+        L += ["## 표 밖 내용 (표로 안 잡힌 셀)", ""]
+        for sheet, cells in meta["extra_cells"].items():
+            L += [f"### {sheet}", ""]
+            L += [f"- `{c['ref']}`: {_fmt_val(c['value'])}" for c in cells]
             L.append("")
 
     if low:

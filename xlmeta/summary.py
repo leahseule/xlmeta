@@ -262,6 +262,10 @@ def summarize(meta):
             else:
                 seen[tb["sig"]] = f"{tb['sheet']}!{tb['range']}"
 
+    ex = meta.get("extra_cells") or {}       # 표 밖 셀 (agent가 놓치지 않게)
+    for c in cards:
+        c["extra"] = [{"ref": e["ref"], "value": _fmt_val(e["value"])} for e in ex.get(c["sheet"], [])]
+
     return {
         "source_file": meta["source_file"],
         "tree": file_tree(meta),
@@ -317,6 +321,10 @@ def markdown(summary):
         for tb in c.get("tables", []):
             ttl = f" — {tb['title']}" if tb["title"] else ""
             L += [f"**실제 데이터 · {tb['range']}**{ttl}", "", data_table_md(tb), ""]
+        if c.get("extra"):
+            L += ["**표 밖 내용 (표로 안 잡힌 셀)**", ""]
+            L += [f"- `{e['ref']}`: {e['value']}" for e in c["extra"]]
+            L.append("")
     return "\n".join(L).rstrip() + "\n"
 
 

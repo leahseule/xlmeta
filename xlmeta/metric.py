@@ -244,6 +244,25 @@ def extract(path):
                 "layout_confidence": reg.confidence,
                 "data": _table_data(ev, sheet, reg),   # 실제 데이터 행·값 (수식은 계산값)
             })
+    # 표(데이터 2행+)에 안 잡힌 비표 셀도 원문으로 — agent가 아무것도 놓치지 않게
+    extra_cells = {}
+    for ws in book.wbf.worksheets:
+        real = [(reg.r0, reg.r1, reg.c0, reg.c1) for reg in book.layout[ws.title]
+                if (reg.r1 - reg.r0 + 1 - len(reg.header_rows)) >= 2]
+        cells = []
+        for row in ws.iter_rows(max_row=min(ws.max_row or 1, 300), max_col=min(ws.max_column or 1, 60)):
+            for cell in row:
+                v = cell.value
+                if v is None or (isinstance(v, str) and not v.strip()):
+                    continue
+                if any(r0 <= cell.row <= r1 and c0 <= cell.column <= c1 for r0, r1, c0, c1 in real):
+                    continue
+                cells.append({"ref": cell.coordinate, "value": ev.value(ws.title, cell.row, cell.column)})
+            if len(cells) >= 100:
+                break
+        if cells:
+            extra_cells[ws.title] = cells[:100]
+
     p = book.wbf.properties
     _d = lambda x: x.strftime("%Y-%m-%d") if x else None
     properties = {
@@ -270,6 +289,7 @@ def extract(path):
         "generated_by": "xlmeta 0.1 (no LLM)",
         "properties": properties,
         "named_ranges": named_ranges,
+        "extra_cells": extra_cells,
         "sheets": [ws.title for ws in book.wbf.worksheets],
         "sources": sources,
         "metrics": metrics,

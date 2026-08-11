@@ -84,6 +84,11 @@ code, .mono { font-family: var(--mono); }
 .act-chip svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .blk-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
 
+/* 진단(관계·불일치) 작은 블록 */
+.ins-warn-sm { border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 9px; padding: 10px 12px; }
+.ins-warn-sm > b { color: var(--warn-ink); font-size: 13px; }
+.ins-inc { font-size: 12.5px; margin-top: 4px; color: var(--ink); }
+
 /* 내보내기 드로어 (상단바 버튼 → 오른쪽 슬라이드) */
 .export-btn { background: var(--excel); color: #fff; border-color: var(--excel); }
 .export-btn:hover { background: var(--excel-2); border-color: var(--excel-2); }

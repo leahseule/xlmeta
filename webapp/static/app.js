@@ -461,6 +461,31 @@ function renderExport() {
 function openExport() { renderExport(); $("exportOverlay").classList.remove("hidden"); }
 function closeExport() { $("exportOverlay").classList.add("hidden"); }
 
+// 파일 전체 진단(관계·불일치) — 개요에 작게
+function insightsBlk() {
+  const ins = DATA.summary && DATA.summary.insights;
+  if (!ins) return "";
+  const highs = (ins.inconsistencies || []).filter((i) => i.severity === "high");
+  const infos = (ins.inconsistencies || []).filter((i) => i.severity === "info");
+  const chains = ins.chains || [], cycles = ins.cycles || [], named = ins.named_ranges || [];
+  if (!highs.length && !infos.length && !chains.length && !cycles.length && !named.length) return "";
+  let inner = "";
+  if (highs.length) {
+    inner += `<div class="ins-warn-sm"><b>⚠️ 정의 불일치 ${highs.length}건 — 같은 이름, 다른 계산</b>`;
+    highs.forEach((inc) => {
+      inner += `<div class="ins-inc">‘${esc(inc.concept)}’ · ${inc.definitions.map((d) => esc(d.where)).join(" ↔ ")}</div>`;
+    });
+    inner += `</div>`;
+  }
+  const bits = [];
+  if (infos.length) bits.push(`명명 참고 ${infos.length}`);
+  if (chains.length) bits.push(`의존 체인 ${chains.length}`);
+  if (cycles.length) bits.push(`순환 ${cycles.length}`);
+  if (named.length) bits.push(`정의된 이름 ${named.length}`);
+  if (bits.length) inner += `<p class="blk-note">${bits.join(" · ")} — 자세히는 <b>AI에게 넘기기</b>의 요약에서</p>`;
+  return blk("진단 · 관계와 불일치", inner, "card");
+}
+
 function interpOverview(sheet) {
   const nCalc = DATA.metrics.filter((m) => m.sheet === sheet.name && m.md_key).length;
   const nFormula = sheet.cells.flat().filter((c) => c.t === "f").length;
@@ -470,6 +495,8 @@ function interpOverview(sheet) {
   // 이 시트는 무엇을 관리하는 문서인지 — 결정론적 한 문단
   const card = (DATA.summary && DATA.summary.sheets || []).find((c) => c.sheet === sheet.name);
   if (card && card.paragraph) h += blk("이 시트는", `<p class="blk-lead">${esc(card.paragraph)}</p>`, "card");
+
+  h += insightsBlk();          // 파일 전체 진단 (개요에 작게)
 
   if (sheet.regions.length) {
     const rows = sheet.regions.map((reg) => {
