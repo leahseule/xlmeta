@@ -27,15 +27,17 @@
     .totals{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px;}
     .totals .t{background:var(--soft);border:1px solid var(--line);border-radius:20px;
       padding:3px 12px;font-size:12.5px;font-weight:600;}
-    .copybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0 0;}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 4px;}
+    .head-txt{min-width:0;}
     button{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
       border:1px solid var(--line);background:var(--bg);color:var(--ink);
       border-radius:8px;padding:8px 14px;}
     button:hover{border-color:var(--accent);color:var(--accent);}
     .copybtn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);
-      color:#fff;border-color:var(--accent);padding:9px 16px;flex:0 0 auto;}
+      color:#fff;border-color:var(--accent);padding:9px 16px;flex:0 0 auto;white-space:nowrap;}
     .copybtn:hover{color:#fff;filter:brightness(1.08);}
     .copybtn svg{width:15px;height:15px;}
+    @media (max-width:560px){.head{flex-direction:column;}}
     .sheet{border-top:1px solid var(--line);margin-top:28px;padding-top:24px;}
     .sheet h2{font-size:18px;margin:0 0 10px;}
     .para{background:var(--soft);border:1px solid var(--line);border-left:3px solid var(--accent);
@@ -66,8 +68,16 @@
 </head>
 <body>
   <div class="wrap">
-    <p class="eyebrow">▦ xlmeta · 엑셀 구조 요약</p>
-    <h1>{{ data.source_file }}</h1>
+    <header class="head">
+      <div class="head-txt">
+        <p class="eyebrow">▦ xlmeta · 엑셀 구조 요약</p>
+        <h1>{{ data.source_file }}</h1>
+      </div>
+      <button class="copybtn" onclick="copyMd()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        내용 복사하기
+      </button>
+    </header>
     <p class="lead">엑셀 수식·레이아웃에서 <b>LLM 없이 결정론적으로</b> 추출했습니다. 재실행하면 같은 결과이며,
       원시 데이터 값은 담지 않고 <b>구조·이름·수식·업무규칙</b>만 담습니다.</p>
 
@@ -77,13 +87,7 @@
       <span class="t">지표 {{ summary.totals.metrics }}</span>
       <span class="t">수식 셀 {{ summary.totals.formula_cells }}</span>
     </div>
-    <div class="copybar">
-      <button class="copybtn" onclick="copyMd()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-        내용 복사하기
-      </button>
-      <span class="lead" style="margin:0;">AI에게 이 페이지 링크를 주거나, 내용을 복사해 붙여넣으면 돼요.</span>
-    </div>
+    <p class="lead" style="margin:12px 0 0;">AI에게 이 페이지 링크를 주거나, 우측 상단 <b>내용 복사하기</b>로 전체를 복사해 붙여넣으면 돼요.</p>
 
     {% if summary.tree %}
     <section class="tree-sec">
