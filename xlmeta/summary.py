@@ -224,7 +224,10 @@ def markdown(summary):
             L += ["**주요 표 영역**", ""]
             for r in c["regions"]:
                 ttl = f" — {r['title']}" if r["title"] else ""
-                L.append(f"- `{r['range']}` ({r['confidence']}, {r['row_count']}행){ttl}")
+                warn = ("" if r["confidence"] == "high"
+                        else " · 구조 확인 필요" if r["confidence"] == "low"
+                        else " · 구조 확인 권장")
+                L.append(f"- `{r['range']}` ({r['row_count']}행){ttl}{warn}")
             L.append("")
         if c["key_columns"]:
             L += [f"**핵심 컬럼(행 식별)**: {', '.join(c['key_columns'])}", ""]
