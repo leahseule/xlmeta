@@ -168,11 +168,12 @@ def file_tree(meta):
         for ti, s in enumerate(srcs):
             last_t = ti == len(srcs) - 1
             t_br, t_co = ("└─ ", "   ") if last_t else ("├─ ", "│  ")
-            tname = s["title"] or s["range"].split("!")[-1]
-            lines.append(f"{s_co}{t_br}표: {tname}  ({s['row_count']}행)")
-            cols = list(s["columns"].values())
+            rng = s["range"].split("!")[-1]                    # 셀 주소는 항상 표시
+            label = rng + (f" · {s['title']}" if s["title"] else "")
+            lines.append(f"{s_co}{t_br}표 {label}  ({s['row_count']}행)")
+            cols = list(s["columns"].items())                 # 컬럼도 열문자=이름으로 전부
             if cols:
-                shown = ", ".join(cols[:12]) + (f" 외 {len(cols) - 12}개" if len(cols) > 12 else "")
+                shown = ", ".join(f"{col}={nm}" for col, nm in cols)
                 lines.append(f"{s_co}{t_co}└─ 컬럼: {shown}")
     return "\n".join(lines)
 
