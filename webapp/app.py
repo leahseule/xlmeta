@@ -35,6 +35,7 @@ from xlmeta.layout import analyze_sheet, cell_type  # noqa: E402
 from xlmeta import formula as F                     # noqa: E402
 from xlmeta.evaluate import Evaluator               # noqa: E402
 import make_sample                                 # noqa: E402
+import qa                                          # noqa: E402  (Q&A 레이어 — OpenAI)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024   # 10MB 상한
@@ -257,6 +258,7 @@ def analyze_path(xlsx_path):
         "okf_single": bundle_md.get("okf.md", ""),   # 엑셀 하나 = OKF 한 문서
         "summary": summ,
         "share": share,
+        "qa_on": qa.available(),                      # Q&A 엔진(OPENAI_API_KEY) 켜져 있나
     }
 
 
@@ -279,7 +281,8 @@ def share_page(sid):
     data = _load_summary(sid)
     if not data:
         abort(404)
-    return render_template("share.html", data=data, summary=data["summary"])
+    return render_template("share.html", data=data, summary=data["summary"],
+                           sid=sid, qa_on=qa.available())
 
 
 @app.post("/api/sample")
@@ -292,6 +295,30 @@ def api_sample():
             return json_response(analyze_path(xlsx))
     except Exception as e:                          # noqa: BLE001
         return json_response({"error": f"샘플 분석 실패: {e}"}, 500)
+
+
+@app.post("/api/ask")
+def api_ask():
+    """지식 문서 위에서 GPT로 Q&A. 코어는 LLM을 안 쓰고, 이 라우트만 OpenAI를 부른다."""
+    body = request.get_json(silent=True) or {}
+    sid = str(body.get("id", ""))
+    question = str(body.get("question", "")).strip()
+    if not question:
+        return json_response({"error": "질문을 입력해 주세요."}, 400)
+    if len(question) > 2000:
+        return json_response({"error": "질문이 너무 깁니다."}, 400)
+    data = _load_summary(sid)
+    if not data:
+        return json_response({"error": "분석 결과를 찾을 수 없어요. 먼저 분석해 주세요."}, 404)
+    try:
+        ans = qa.answer(data.get("markdown", ""), question, data["source_file"])
+        return json_response({"answer": ans, "model": qa.model_name()})
+    except qa.NoKeyError:
+        return json_response(
+            {"error": "서버에 OPENAI_API_KEY가 설정되지 않았습니다. "
+                      "환경변수를 넣고 다시 시작해 주세요."}, 503)
+    except Exception as e:                          # noqa: BLE001
+        return json_response({"error": f"답변 생성 실패: {e}"}, 500)
 
 
 @app.post("/api/analyze")

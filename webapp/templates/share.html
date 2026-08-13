@@ -88,6 +88,27 @@
     .cpt-ev{font-size:11px;color:var(--muted);margin-top:6px;}
     .cpt-ev code{font-size:10.5px;margin-right:4px;}
     .cpt-solo{font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;}
+    .ask{margin:18px 0 6px;border:1px solid var(--accent);border-radius:12px;
+      padding:14px 16px;background:linear-gradient(180deg,rgba(33,115,70,.05),transparent);}
+    .ask .k{margin:0;}
+    .ask-sub{font-size:12.5px;color:var(--muted);margin:4px 0 10px;line-height:1.55;}
+    .ask-row{display:flex;gap:8px;}
+    .ask-input{flex:1;min-width:0;font-size:14px;padding:10px 12px;border:1px solid var(--line);
+      border-radius:9px;background:var(--bg);color:var(--ink);font-family:inherit;}
+    .ask-input:focus{outline:none;border-color:var(--accent);}
+    .ask-input:disabled{background:var(--soft);color:var(--muted);}
+    .ask-btn{flex:none;font-size:14px;font-weight:600;padding:10px 18px;border:none;border-radius:9px;
+      background:var(--accent);color:#fff;cursor:pointer;}
+    .ask-btn:disabled{opacity:.5;cursor:not-allowed;}
+    .ask-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+    .ask-chip{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:20px;
+      background:var(--bg);color:var(--muted);cursor:pointer;}
+    .ask-chip:hover{border-color:var(--accent);color:var(--accent);}
+    .ask-note{font-size:12px;color:var(--warn-ink);margin:9px 0 0;}
+    .ask-ans{margin-top:12px;padding:12px 14px;border-radius:9px;background:var(--soft);
+      border:1px solid var(--line);font-size:13.5px;line-height:1.65;color:var(--ink);white-space:pre-wrap;}
+    .ask-ans.loading{color:var(--muted);}
+    .ask-ans.err{color:var(--warn-ink);border-color:var(--warn-line);background:var(--warn-bg);}
     footer{border-top:1px solid var(--line);margin-top:36px;padding-top:16px;
       color:var(--muted);font-size:12.5px;}
     footer a{color:var(--accent);text-decoration:none;}
@@ -121,6 +142,26 @@
       <span class="t">수식 셀 {{ summary.totals.formula_cells }}</span>
     </div>
     <p class="lead" style="margin:12px 0 0;">AI에게 이 페이지 링크를 주거나, 우측 상단 <b>내용 복사하기</b>로 전체를 복사해 붙여넣으면 돼요.</p>
+
+    <section class="ask">
+      <p class="k">이 엑셀에 물어보기</p>
+      <p class="ask-sub">위 지식(구조·데이터·규칙·계보·불일치·개념)만 근거로 답해요. 문서에 없으면 “없어요”라고 답합니다.</p>
+      <div class="ask-row">
+        <input id="askq" class="ask-input" type="text" autocomplete="off"
+               placeholder="예: 발생원가는 어떻게 계산돼요? 시트마다 다른 값이 있나요?"
+               {% if not qa_on %}disabled{% endif %}/>
+        <button id="askbtn" class="ask-btn" onclick="ask()" {% if not qa_on %}disabled{% endif %}>물어보기</button>
+      </div>
+      <div class="ask-chips">
+        <button class="ask-chip" onclick="askThis(this)">이 파일은 무슨 문서예요?</button>
+        <button class="ask-chip" onclick="askThis(this)">같은 이름인데 다르게 계산된 게 있어요?</button>
+        <button class="ask-chip" onclick="askThis(this)">사람이 직접 넣은 값은 어디예요?</button>
+      </div>
+      {% if not qa_on %}
+      <p class="ask-note">⚠ 지금은 답변 엔진이 꺼져 있어요 (서버에 <code>OPENAI_API_KEY</code> 미설정). 키를 넣고 재시작하면 켜집니다.</p>
+      {% endif %}
+      <div id="askans" class="ask-ans" hidden></div>
+    </section>
 
     {% if summary.tree %}
     <section class="tree-sec">
@@ -268,6 +309,7 @@
   <pre id="md">{{ data.markdown }}</pre>
   <div class="toast" id="toast">복사했어요</div>
   <script>
+    const SID = "{{ sid }}";
     function copyMd(){
       const t = document.getElementById("md").textContent;
       navigator.clipboard.writeText(t).then(() => {
@@ -275,6 +317,36 @@
         el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1400);
       });
     }
+    function askThis(btn){
+      const inp = document.getElementById("askq");
+      inp.value = btn.textContent; ask();
+    }
+    async function ask(){
+      const inp = document.getElementById("askq");
+      const btn = document.getElementById("askbtn");
+      const box = document.getElementById("askans");
+      const q = (inp.value || "").trim();
+      if (!q) { inp.focus(); return; }
+      btn.disabled = true; inp.disabled = true;
+      box.hidden = false; box.className = "ask-ans loading"; box.textContent = "생각 중…";
+      try {
+        const r = await fetch("/api/ask", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ id: SID, question: q }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "답변 실패");
+        box.className = "ask-ans";
+        box.textContent = d.answer || "(빈 답변)";
+      } catch (e) {
+        box.className = "ask-ans err"; box.textContent = "⚠ " + e.message;
+      } finally {
+        btn.disabled = false; inp.disabled = false;
+      }
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && document.activeElement && document.activeElement.id === "askq") ask();
+    });
   </script>
 </body>
 </html>

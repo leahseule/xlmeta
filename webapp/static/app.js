@@ -423,6 +423,54 @@ function aiHandoffBlk() {
     "card");
 }
 
+// 이 엑셀에 물어보기 — 지식 문서 위에서 GPT Q&A (코어는 LLM 없음)
+function askBlk() {
+  const s = DATA.share;
+  if (!s) return "";
+  const on = !!DATA.qa_on;
+  const dis = on ? "" : "disabled";
+  const note = on
+    ? `<p class="blk-note">위 지식(구조·데이터·규칙·계보·불일치·개념)만 근거로 답해요. 문구에 없으면 “없어요”라고 답합니다.</p>`
+    : `<p class="ask-note">⚠ 답변 엔진이 꺼져 있어요 (서버에 <code>OPENAI_API_KEY</code> 미설정). 키를 넣고 재시작하면 켜져요.</p>`;
+  return blk("이 엑셀에 물어보기",
+    `<div class="ask-row">
+       <input id="askq" class="ask-input" type="text" autocomplete="off" ${dis}
+              placeholder="예: 발생원가는 어떻게 계산돼요? 시트마다 다른 값이 있나요?"/>
+       <button id="askbtn" class="ask-btn" ${dis}>물어보기</button>
+     </div>
+     <div class="ask-chips">
+       <button class="ask-chip" ${dis}>이 파일은 무슨 문서예요?</button>
+       <button class="ask-chip" ${dis}>같은 이름인데 다르게 계산된 게 있어요?</button>
+       <button class="ask-chip" ${dis}>사람이 직접 넣은 값은 어디예요?</button>
+     </div>
+     ${note}
+     <div id="askans" class="ask-ans" hidden></div>`,
+    "card");
+}
+
+async function runAsk(q) {
+  const s = DATA.share;
+  const inp = $("askq"), btn = $("askbtn"), box = $("askans");
+  q = (q || "").trim();
+  if (!q || !s) { inp && inp.focus(); return; }
+  inp.value = q;
+  btn.disabled = true; inp.disabled = true;
+  box.hidden = false; box.className = "ask-ans loading"; box.textContent = "생각 중…";
+  try {
+    const r = await fetch("/api/ask", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: s.id, question: q }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "답변 실패");
+    box.className = "ask-ans"; box.textContent = d.answer || "(빈 답변)";
+  } catch (e) {
+    box.className = "ask-ans err"; box.textContent = "⚠ " + e.message;
+  } finally {
+    btn.disabled = false; inp.disabled = false;
+  }
+}
+
 // OKF — 엑셀 하나 = 한 문서. 에이전트가 한 번에 읽는다.
 function okfBlk() {
   const okf = DATA.okf_single || "";
@@ -450,12 +498,19 @@ function downloadOkf() {
 function renderExport() {
   const body = $("exportBody");
   if (!DATA) { body.innerHTML = `<p class="muted">먼저 엑셀을 분석하세요.</p>`; return; }
-  body.innerHTML = aiHandoffBlk() + okfBlk();       // 위: AI에게 넘기기 / 아래: OKF 한 문서
+  // 위: 물어보기(Q&A) / 가운데: AI에게 넘기기 / 아래: OKF 한 문서
+  body.innerHTML = askBlk() + aiHandoffBlk() + okfBlk();
   body.onclick = (e) => {
+    if (e.target.closest("#askbtn")) return runAsk($("askq").value);
+    const chip = e.target.closest(".ask-chip");
+    if (chip) return runAsk(chip.textContent);
     if (e.target.closest("#okfCopy")) return copyText(DATA.okf_single || "");
     if (e.target.closest("#okfDownload")) return downloadOkf();
     const cp = e.target.closest("[data-copy]");
     if (cp) copyText(cp.dataset.copy);
+  };
+  body.onkeydown = (e) => {
+    if (e.key === "Enter" && e.target && e.target.id === "askq") runAsk(e.target.value);
   };
 }
 function openExport() { renderExport(); $("exportOverlay").classList.remove("hidden"); }

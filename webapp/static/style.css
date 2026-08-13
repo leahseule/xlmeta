@@ -104,6 +104,26 @@ code, .mono { font-family: var(--mono); }
   background: #eef7f0; color: #1e7a3c; border: 1px solid #cfe8d6; border-radius: 20px; padding: 2px 8px; }
 .cpt-chip i { font-style: normal; font-size: 10.5px; background: #217346; color: #fff; border-radius: 10px; padding: 0 6px; }
 
+/* 이 엑셀에 물어보기 (Q&A) */
+.ask-row { display: flex; gap: 8px; }
+.ask-input { flex: 1; min-width: 0; font-size: 14px; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 9px; background: var(--bg); color: var(--ink); font-family: inherit; }
+.ask-input:focus { outline: none; border-color: #217346; }
+.ask-input:disabled { background: var(--soft, #f4f5f6); color: var(--muted); }
+.ask-btn { flex: none; font-size: 14px; font-weight: 600; padding: 10px 18px; border: none;
+  border-radius: 9px; background: #217346; color: #fff; cursor: pointer; }
+.ask-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ask-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.ask-chip { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 20px;
+  background: var(--bg); color: var(--muted); cursor: pointer; }
+.ask-chip:hover:not(:disabled) { border-color: #217346; color: #217346; }
+.ask-chip:disabled { opacity: .5; cursor: not-allowed; }
+.ask-note { font-size: 12px; color: #b25b00; margin: 9px 0 0; }
+.ask-ans { margin-top: 12px; padding: 12px 14px; border-radius: 9px; background: var(--soft, #f4f5f6);
+  border: 1px solid var(--line); font-size: 13.5px; line-height: 1.65; color: var(--ink); white-space: pre-wrap; }
+.ask-ans.loading { color: var(--muted); }
+.ask-ans.err { color: #b25b00; }
+
 /* 내보내기 드로어 (상단바 버튼 → 오른쪽 슬라이드) */
 .export-btn { background: var(--excel); color: #fff; border-color: var(--excel); }
 .export-btn:hover { background: var(--excel-2); border-color: var(--excel-2); }

@@ -2,3 +2,4 @@
 -r ../requirements.txt
 flask>=3.0
 gunicorn>=21.0        # 배포용 WSGI 서버 (로컬은 app.py로 충분)
+openai>=1.0           # Q&A 레이어 전용 (코어 파서와 무관). 키 없으면 호출 안 함
