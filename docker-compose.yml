@@ -9,6 +9,10 @@ services:
     environment:
       PORT: "8000"
       XLMETA_DATA_DIR: /data/summaries
+      # Q&A('이 엑셀에 물어보기')를 켜려면 호스트 환경변수나 .env에 키를 넣는다.
+      # 없으면 코어는 정상 동작하고 Q&A만 꺼진 채(비활성) 나온다.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     volumes:
       - xlmeta_data:/data         # /s/<id> 요약이 컨테이너 재시작에도 살아남게
     restart: unless-stopped
