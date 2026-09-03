@@ -36,6 +36,7 @@ from xlmeta import formula as F                     # noqa: E402
 from xlmeta.evaluate import Evaluator               # noqa: E402
 import make_sample                                 # noqa: E402
 import qa                                          # noqa: E402  (Q&A 레이어 — OpenAI)
+import graph_qa                                    # noqa: E402  (그래프 Q&A 프로토타입 — Neo4j)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024   # 10MB 상한
@@ -231,6 +232,15 @@ def analyze_path(xlsx_path):
         "markdown": summ_md,
         "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     })
+    if graph_qa.available():
+        try:
+            graph_qa.load_structured_graph(sid, meta)
+        except Exception:                                # noqa: BLE001  (그래프 DB 문제로 분석 자체가 죽으면 안 됨)
+            import traceback
+            print("[graph_qa] 구조 그래프 적재 실패(챗봇 탭은 꺼진 채로 진행):", flush=True)
+            traceback.print_exc()
+            sys.stdout.flush()
+
     share_url = request.host_url.rstrip("/") + "/s/" + sid
     share = {
         "id": sid,
@@ -259,6 +269,7 @@ def analyze_path(xlsx_path):
         "summary": summ,
         "share": share,
         "qa_on": qa.available(),                      # Q&A 엔진(OPENAI_API_KEY) 켜져 있나
+        "graph_qa_on": graph_qa.available(),          # 그래프 챗봇(Neo4j+OPENAI_API_KEY) 켜져 있나
     }
 
 
@@ -317,6 +328,29 @@ def api_ask():
         return json_response(
             {"error": "서버에 OPENAI_API_KEY가 설정되지 않았습니다. "
                       "환경변수를 넣고 다시 시작해 주세요."}, 503)
+
+
+@app.post("/api/ask-graph")
+def api_ask_graph():
+    """셀 그래프(Neo4j) 위에서 자연어 질문 -> Cypher로 답변 (챗봇 탭 전용)."""
+    body = request.get_json(silent=True) or {}
+    sid = str(body.get("id", ""))
+    question = str(body.get("question", "")).strip()
+    if not question:
+        return json_response({"error": "질문을 입력해 주세요."}, 400)
+    if len(question) > 2000:
+        return json_response({"error": "질문이 너무 깁니다."}, 400)
+    if not _load_summary(sid):
+        return json_response({"error": "분석 결과를 찾을 수 없어요. 먼저 분석해 주세요."}, 404)
+    try:
+        answer = graph_qa.ask(sid, question)
+        return json_response({"answer": answer, "model": graph_qa.model_name()})
+    except graph_qa.NotConfigured:
+        return json_response(
+            {"error": "서버에 그래프 챗봇 설정이 안 돼 있습니다 "
+                      "(OPENAI_API_KEY/NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD)."}, 503)
+    except Exception as e:                          # noqa: BLE001  (Neo4j 연결 문제 등)
+        return json_response({"error": f"그래프 질의 실패: {e}"}, 500)
     except Exception as e:                          # noqa: BLE001
         return json_response({"error": f"답변 생성 실패: {e}"}, 500)
 

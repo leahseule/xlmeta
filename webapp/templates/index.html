@@ -92,10 +92,22 @@
     </section>
     <section class="pane right">
       <header class="pane-h">
-        <span class="pane-title">해석</span>
-        <span class="pane-sub">xlmeta가 읽어낸 것</span>
+        <div class="pane-tabs" id="paneTabs">
+          <button class="pane-tab active" data-tab="interp">해석</button>
+          <button class="pane-tab" data-tab="chat">챗봇</button>
+        </div>
+        <span class="pane-sub" id="paneSub">xlmeta가 읽어낸 것</span>
       </header>
       <div class="interp" id="interp"></div>
+      <div class="chatpanel hidden" id="chatPanel">
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="ask-row chat-inputrow">
+          <input id="chatInput" class="ask-input" type="text" autocomplete="off"
+                 placeholder="예: 가장 많이 참조되는 셀은? 원가현황!D6은 뭘 참조해?"/>
+          <button id="chatSendBtn" class="ask-btn">보내기</button>
+        </div>
+        <p class="ask-note" id="chatNote" hidden>⚠ 그래프 챗봇이 꺼져 있어요.</p>
+      </div>
     </section>
   </main>
 

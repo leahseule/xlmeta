@@ -78,3 +78,21 @@ ChatGPT·Claude는 http 링크도 대개 읽지만, 프로덕션은 https가 안
 |---|---|---|
 | `PORT` | `8000` | 컨테이너 내부 포트 (compose가 80→8000 매핑) |
 | `XLMETA_DATA_DIR` | `/data/summaries` | 요약 저장 경로 (볼륨) |
+| `OPENAI_API_KEY` | (없음) | Q&A·그래프 챗봇 켜는 키. 없으면 둘 다 비활성으로 정상 동작 |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Q&A·챗봇에 쓰는 모델 |
+| `NEO4J_PASSWORD` | (없음, 필수) | 그래프 챗봇용. 서버 `.env`에 직접 정해서 넣는다(임의의 강한 비밀번호) |
+
+배포 전 서버에서 `.env` 파일에 `OPENAI_API_KEY=...`, `NEO4J_PASSWORD=...`를 넣어둘 것
+(compose가 같은 디렉토리의 `.env`를 자동으로 읽는다). `NEO4J_PASSWORD`가 없으면
+Neo4j 컨테이너가 시작에 실패한다(암호 없이 뜨는 것보단 안전한 실패).
+
+## 그래프 챗봇(Neo4j) — 보안 메모
+
+- **`neo4j` 서비스는 호스트 포트를 절대 열지 않는다.** xlmeta 컨테이너만 도커 내부망으로
+  `bolt://neo4j:7687`에 접근하고, 외부 인터넷에선 이 포트에 닿을 방법이 없다. 배포 시
+  실수로 `ports:`를 추가하지 말 것.
+- 챗봇이 실행하는 Cypher는 `routing_=READ`로 돌아서(`webapp/graph_qa.py`), Neo4j 서버가
+  쓰기 쿼리 자체를 거부한다 — 프롬프트 인젝션으로 삭제/수정을 유도해도 서버 단에서 막힘.
+- **메모리**: Neo4j는 기본으로 컨테이너 메모리를 넉넉히 쓰려 하므로 `mem_limit: 1g`로
+  잡아뒀다. Weave·xlmeta·Caddy와 한 인스턴스를 같이 쓰므로, 배포 후 `docker stats`로
+  실제 메모리 여유를 보고 인스턴스가 버거우면 `mem_limit`을 낮추거나 인스턴스를 올릴 것.

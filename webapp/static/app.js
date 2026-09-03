@@ -6,6 +6,7 @@ let METRIC_BY_ID = {};
 let STRUCT = [];
 let CUR_SHEET = 0;
 let SELECTED = { kind: "overview", key: null };   // overview | region | metric
+let CHAT_MESSAGES = [];   // 챗봇 탭 대화 기록: {role: "user"|"bot", text, cls}
 
 const CONF_KO = { high: "높음", medium: "보통", low: "낮음" };
 
@@ -94,6 +95,10 @@ function onData(data) {
   renderLegend();
   renderSheetTabs();
   selectSheet(best);
+
+  CHAT_MESSAGES = [];
+  switchPaneTab("interp");
+  renderChat();
 }
 
 // ── 시트 탭 ──────────────────────────────────────────────────
@@ -1173,4 +1178,66 @@ function initLanding() {
   initShowcase();
 }
 
+// ── 우측 패널 탭 (해석 / 챗봇) ──────────────────────────────────
+const PANE_SUB = { interp: "xlmeta가 읽어낸 것", chat: "셀 그래프(Neo4j)에 자연어로 물어보기" };
+
+function switchPaneTab(tab) {
+  document.querySelectorAll(".pane-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  $("interp").classList.toggle("hidden", tab !== "interp");
+  $("chatPanel").classList.toggle("hidden", tab !== "chat");
+  $("paneSub").textContent = PANE_SUB[tab] || "";
+}
+
+// ── 챗봇 탭: 그래프 Q&A (/api/ask-graph) ─────────────────────────
+function renderChat() {
+  const box = $("chatMsgs");
+  box.innerHTML = CHAT_MESSAGES.map(
+    (m) => `<div class="chat-msg ${m.role} ${m.cls || ""}">${esc(m.text)}</div>`
+  ).join("");
+  box.scrollTop = box.scrollHeight;
+
+  const on = !!(DATA && DATA.graph_qa_on);
+  $("chatInput").disabled = !on;
+  $("chatSendBtn").disabled = !on;
+  $("chatNote").hidden = on;
+}
+
+async function sendChatMessage() {
+  const input = $("chatInput");
+  const q = input.value.trim();
+  if (!q || !DATA || !DATA.share) return;
+  input.value = "";
+  CHAT_MESSAGES.push({ role: "user", text: q });
+  const pending = { role: "bot", text: "생각 중…", cls: "loading" };
+  CHAT_MESSAGES.push(pending);
+  renderChat();
+  $("chatInput").disabled = true;
+  $("chatSendBtn").disabled = true;
+  try {
+    const r = await fetch("/api/ask-graph", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: DATA.share.id, question: q }),
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || "답변 실패");
+    pending.text = d.answer || "(빈 답변)";
+    pending.cls = "";
+  } catch (e) {
+    pending.text = "⚠ " + e.message;
+    pending.cls = "err";
+  } finally {
+    renderChat();
+  }
+}
+
+function initChatPanel() {
+  $("paneTabs").addEventListener("click", (e) => {
+    const btn = e.target.closest(".pane-tab");
+    if (btn) switchPaneTab(btn.dataset.tab);
+  });
+  $("chatSendBtn").onclick = sendChatMessage;
+  $("chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendChatMessage(); });
+}
+
 initLanding();
+initChatPanel();
