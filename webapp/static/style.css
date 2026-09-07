@@ -343,7 +343,10 @@ td.selgroup { background-image: linear-gradient(rgba(47,111,237,.06), rgba(47,11
   border-radius: 50%; background: var(--sel); opacity: .7; }
 
 /* ── 오른쪽: 해석 ── */
-.interp { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 22px 28px; max-width: 720px; }
+/* 스크롤은 패딩 없는 바깥(.interp)에서 일어나게 해서 스크롤바가 화면 오른쪽 끝에
+   붙게 하고, 실제 여백·최대폭은 안쪽(.interp-inner)에만 준다. */
+.interp { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+.interp-inner { padding: 22px 28px; max-width: 720px; }
 .crumb { font-size: 13px; color: var(--muted); margin-bottom: 16px;
   display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .cr-link { cursor: pointer; }

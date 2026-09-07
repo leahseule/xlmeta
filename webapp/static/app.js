@@ -376,7 +376,7 @@ function renderInterp() {
   ).join(`<span class="cr-sep">›</span>`);
 
   const panel = $("interp");
-  panel.innerHTML = `<nav class="crumb">${crumbHtml}</nav>${body}`;
+  panel.innerHTML = `<div class="interp-inner"><nav class="crumb">${crumbHtml}</nav>${body}</div>`;
   panel.onclick = (e) => {
     const el = e.target.closest(".cr-link, [data-ref-a1], [data-focus-r], [data-goto], [data-region], [data-back-metric], [data-copy]");
     if (!el) return;

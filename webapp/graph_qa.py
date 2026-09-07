@@ -58,12 +58,23 @@ _CYPHER_PROMPT_TEMPLATE = PromptTemplate.from_template("""\
 - 텍스트 값(value, name, title)을 비교할 때는 '=' 대신 CONTAINS를 쓰고, 대소문자·띄어쓰기 차이를 무시하려면
   toLower(replace(toString(x), ' ', '')) CONTAINS toLower(replace('질문의 값', ' ', '')) 형태로 짠다.
   value 속성은 숫자일 수도 있으니 항상 toString()으로 먼저 문자열로 바꾼다.
+- 검색어가 여러 단어이고 실제 값엔 그 사이에 다른 단어가 더 끼어있을 수 있다(예: 질문은
+  "여수 터미널"인데 실제 값은 "여수 LNG 터미널" — 중간에 "LNG"가 껴서 통째로는 CONTAINS가
+  안 됨). 이럴 땐 문구를 통째로 CONTAINS 하지 말고, **의미 있는 단어 단위로 쪼개서 각 단어가
+  다 들어있는지 AND로 연결**해 확인한다:
+  toLower(toString(x)) CONTAINS '여수' AND toLower(toString(x)) CONTAINS '터미널'
 - "A를 알면 같은 행의 B를 찾아라" 유형(행 기반 조회)은 반드시 아래 예시와 같은 패턴으로 짠다:
   Column(A)로 셀을 먼저 찾고 -> WITH로 그 결과를 확정지은 뒤 -> Row를 타고 -> Column(B)에 속한 Cell을 찾는다.
   두 MATCH를 WITH 없이 바로 이어 쓰면 Neo4j가 실행 순서를 섞어서 엉뚱한 셀을 훑을 수 있으니,
   반드시 첫 MATCH+WHERE 다음에 WITH로 경계를 끊는다.
 - 특정 Cell의 값을 답으로 반환할 때는, 그 값만 반환하지 말고 **그 Cell의 name(셀 주소, 예:
   '원가현황!D6')도 항상 같이 RETURN**한다. 사용자가 그 셀로 바로 이동할 수 있게 하는 데 쓴다.
+- 질문이 여러 항목 값의 **합계·차이·평균 등 계산**을 요구하면, 계산은 반드시 Cypher 안에서
+  사칙연산(+, -, *, /)으로 직접 한다. 답변을 만드는 다음 단계는 숫자를 다시 계산하지 않고
+  Cypher가 이미 계산해서 내려준 값을 그대로 옮겨 적을 뿐이다 — LLM이 큰 숫자를 암산하면
+  틀리기 쉬우므로, 계산 자체는 항상 Cypher가 맡는다. 여러 항목을 각각 찾을 땐 UNION으로
+  나열하지 말고, 아래 예시처럼 WITH로 이전에 찾은 값을 계속 들고 가면서 순서대로 다음
+  항목을 찾은 뒤, 마지막 RETURN에서 한 번에 계산한다.
 
 예시 질문 1 (알려진 값이 어느 컬럼 값인지 질문에 명시된 경우): "프로젝트코드 P-9000의 담당자는?"
 예시 Cypher:
@@ -107,6 +118,22 @@ WITH anchorCell
 MATCH (anchorCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'집행률'}})
 RETURN targetCell.value AS 값, targetCell.name AS 셀
 
+예시 질문 5 (여러 항목 값의 합계·차이 등 계산을 요구하는 경우 — 계산은 반드시 Cypher 안에서
+한다. 검색어 "여수 터미널"은 실제 값 "여수 LNG 터미널"과 통째로는 안 맞을 수 있으니
+단어 단위로 나눠 확인한다): "서산과 여수 터미널의 계약금액 합계는?"
+예시 Cypher:
+MATCH (a1:Cell)
+WHERE toLower(toString(a1.value)) CONTAINS '서산'
+WITH a1
+MATCH (a1)<-[:HAS_CELL]-(row1:Row)-[:HAS_CELL]->(t1:Cell)<-[:HAS_VALUE]-(:Column {{name:'계약금액'}})
+WITH t1
+MATCH (a2:Cell)
+WHERE toLower(toString(a2.value)) CONTAINS '여수' AND toLower(toString(a2.value)) CONTAINS '터미널'
+WITH t1, a2
+MATCH (a2)<-[:HAS_CELL]-(row2:Row)-[:HAS_CELL]->(t2:Cell)<-[:HAS_VALUE]-(:Column {{name:'계약금액'}})
+RETURN t1.value AS 값1, t1.name AS 셀1, t2.value AS 값2, t2.name AS 셀2,
+       (toFloat(t1.value) + toFloat(t2.value)) AS 합계
+
 - 다른 설명 없이 Cypher 쿼리만 출력한다.
 
 질문: {question}
@@ -123,6 +150,11 @@ QA_PROMPT = PromptTemplate.from_template("""\
 3. [조회 결과]에 서로 다른 값이 여러 개 있으면(같은 항목이 여러 표에서 다르게 계산된
    경우 등) 하나를 임의로 고르지 말고, 있는 그대로 다 보여주며 어디서 나온 값인지
    구분해 말한다.
+3-1. 질문이 합계·차이 같은 계산을 요구했다면, [조회 결과]에 이미 계산된 값(예: '합계'
+   필드)이 들어있을 것이다 — **그 값을 그대로 옮겨 적을 뿐, 절대 스스로 다시 더하거나
+   계산하지 않는다**(큰 숫자를 암산하면 틀리기 쉬움). 계산을 요구했는데 [조회 결과]에
+   계산된 값이 안 보이면, 추측해서 계산하지 말고 "계산에 필요한 값을 다 못 찾았어요"라고
+   답한다.
 4. 한국어로, 간결하고 구체적으로 답한다. **숫자나 값 하나만 덩그러니 내놓지 말고,
    무엇에 대한 값인지 짧게 되짚어주는 완전한 문장으로, 근거 셀 주소까지 포함해서
    답한다** (예: "P-2403(여수 LNG 터미널)의 발생원가는 **252,000,000**입니다
