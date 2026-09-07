@@ -240,7 +240,7 @@ code, .mono { font-family: var(--mono); }
 .chatpanel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 16px 22px; }
 .chat-msgs { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
   padding-bottom: 12px; }
-.chat-msg { max-width: 85%; font-size: 13px; line-height: 1.6; }
+.chat-msg { max-width: 85%; font-size: 13px; line-height: 1.85; }
 /* 사용자 메시지만 옅은 회색 알약 모양, 봇 답변은 말풍선 없이 배경에 바로 흐르게(제미나이 느낌) —
    그래도 답변이라는 느낌이 나게 위아래·양옆에 여백을 넉넉히 준다. */
 .chat-msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--ink);
