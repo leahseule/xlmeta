@@ -156,6 +156,11 @@ def load_structured_graph(sid, result):
     """분석 시점에 한 번 호출 — extract() 결과(구조+cell_graph)를 Neo4j에 sid로 태그해 적재.
 
     MERGE만 쓰므로 같은 sid로 재호출해도 안전(재분석·재시작 시 중복 안 생김).
+
+    셀 하나마다 쿼리 하나씩 날리면(로컬 Neo4j에선 문제없었지만) Neo4j Aura처럼
+    원격이면 왕복 지연시간이 곱해져 파일 하나에 수백 번 왕복 → 수십 초~gunicorn
+    타임아웃까지 걸릴 수 있다. UNWIND로 묶어서 파일 크기와 무관하게 쿼리 8개 안팎으로
+    끝낸다(2026-09-07, Aura 전환 후 실제로 겪은 문제).
     """
     _require_env()
     graph = _plain_graph()
@@ -163,85 +168,107 @@ def load_structured_graph(sid, result):
 
     graph.query("MERGE (f:File {source_file: $sf, sid: $sid})", {"sf": source_file, "sid": sid})
 
-    for sheet in result["sheets"]:
-        graph.query(
-            """
-            MERGE (s:Sheet {name: $name, sid: $sid})
-            WITH s
-            MATCH (f:File {source_file: $sf, sid: $sid})
-            MERGE (f)-[:HAS_SHEET]->(s)
-            """,
-            {"name": sheet, "sid": sid, "sf": source_file},
-        )
+    graph.query(
+        """
+        UNWIND $sheets AS name
+        MERGE (s:Sheet {name: name, sid: $sid})
+        WITH s, name
+        MATCH (f:File {source_file: $sf, sid: $sid})
+        MERGE (f)-[:HAS_SHEET]->(s)
+        """,
+        {"sheets": result["sheets"], "sid": sid, "sf": source_file},
+    )
 
+    tables, columns, rows, cells = [], [], [], []
     for table in result["sources"]:
         table_key = table["title"] or table["range"]
-        graph.query(
-            """
-            MERGE (t:Table {key: $key, sid: $sid})
-            SET t.title = $title, t.range = $range
-            WITH t
-            MATCH (s:Sheet {name: $sheet, sid: $sid})
-            MERGE (s)-[:HAS_TABLE]->(t)
-            """,
-            {"key": table_key, "sid": sid, "title": table["title"], "range": table["range"], "sheet": table["sheet"]},
-        )
-
+        tables.append({"key": table_key, "title": table["title"], "range": table["range"], "sheet": table["sheet"]})
         for letter, name in table["columns"].items():
-            graph.query(
-                """
-                MERGE (c:Column {table: $table, letter: $letter, sid: $sid})
-                SET c.name = $name
-                WITH c
-                MATCH (t:Table {key: $table, sid: $sid})
-                MERGE (t)-[:HAS_COLUMN]->(c)
-                """,
-                {"table": table_key, "letter": letter, "sid": sid, "name": name},
-            )
+            columns.append({"table": table_key, "letter": letter, "name": name})
 
         col_letters = table["data"]["col_letters"]
         for row in table["data"]["rows"]:
             r = row["r"]
-            graph.query(
-                """
-                MERGE (row:Row {table: $table, r: $r, sid: $sid})
-                WITH row
-                MATCH (t:Table {key: $table, sid: $sid})
-                MERGE (t)-[:HAS_ROW]->(row)
-                """,
-                {"table": table_key, "r": r, "sid": sid},
-            )
+            rows.append({"table": table_key, "r": r})
             for letter, value in zip(col_letters, row["cells"]):
-                cell_name = f"{table['sheet']}!{letter}{r}"
-                graph.query(
-                    """
-                    MERGE (c:Cell {name: $name, sid: $sid})
-                    SET c.value = $value
-                    WITH c
-                    MATCH (row:Row {table: $table, r: $r, sid: $sid})
-                    MATCH (col:Column {table: $table, letter: $letter, sid: $sid})
-                    MERGE (row)-[:HAS_CELL]->(c)
-                    MERGE (col)-[:HAS_VALUE]->(c)
-                    """,
-                    {"name": cell_name, "sid": sid, "value": value, "table": table_key, "r": r, "letter": letter},
-                )
+                cells.append({
+                    "table": table_key, "r": r, "letter": letter,
+                    "name": f"{table['sheet']}!{letter}{r}", "value": value,
+                })
+
+    if tables:
+        graph.query(
+            """
+            UNWIND $tables AS t
+            MERGE (table:Table {key: t.key, sid: $sid})
+            SET table.title = t.title, table.range = t.range
+            WITH table, t
+            MATCH (s:Sheet {name: t.sheet, sid: $sid})
+            MERGE (s)-[:HAS_TABLE]->(table)
+            """,
+            {"tables": tables, "sid": sid},
+        )
+    if columns:
+        graph.query(
+            """
+            UNWIND $columns AS col
+            MERGE (c:Column {table: col.table, letter: col.letter, sid: $sid})
+            SET c.name = col.name
+            WITH c, col
+            MATCH (t:Table {key: col.table, sid: $sid})
+            MERGE (t)-[:HAS_COLUMN]->(c)
+            """,
+            {"columns": columns, "sid": sid},
+        )
+    if rows:
+        graph.query(
+            """
+            UNWIND $rows AS row
+            MERGE (r:Row {table: row.table, r: row.r, sid: $sid})
+            WITH r, row
+            MATCH (t:Table {key: row.table, sid: $sid})
+            MERGE (t)-[:HAS_ROW]->(r)
+            """,
+            {"rows": rows, "sid": sid},
+        )
+    if cells:
+        graph.query(
+            """
+            UNWIND $cells AS cell
+            MERGE (c:Cell {name: cell.name, sid: $sid})
+            SET c.value = cell.value
+            WITH c, cell
+            MATCH (row:Row {table: cell.table, r: cell.r, sid: $sid})
+            MATCH (col:Column {table: cell.table, letter: cell.letter, sid: $sid})
+            MERGE (row)-[:HAS_CELL]->(c)
+            MERGE (col)-[:HAS_VALUE]->(c)
+            """,
+            {"cells": cells, "sid": sid},
+        )
 
     # 수식 의존관계(READS)도 같은 Cell 노드 위에 그대로 얹는다.
-    for cell_name, info in result["cell_graph"].items():
+    formulas = [{"name": name, "formula": info.get("formula")} for name, info in result["cell_graph"].items()]
+    if formulas:
         graph.query(
-            "MERGE (c:Cell {name: $name, sid: $sid}) SET c.formula = $formula",
-            {"name": cell_name, "sid": sid, "formula": info.get("formula")},
+            "UNWIND $formulas AS f MERGE (c:Cell {name: f.name, sid: $sid}) SET c.formula = f.formula",
+            {"formulas": formulas, "sid": sid},
         )
-    for cell_name, info in result["cell_graph"].items():
-        for ref in info.get("reads", []):
-            graph.query(
-                """
-                MERGE (a:Cell {name: $a, sid: $sid})
-                MERGE (b:Cell {name: $b, sid: $sid})
-                MERGE (a)-[:READS]->(b)
-                """,
-                {"a": cell_name, "b": ref, "sid": sid},
-            )
+
+    edges = [
+        {"a": name, "b": ref}
+        for name, info in result["cell_graph"].items()
+        for ref in info.get("reads", [])
+    ]
+    if edges:
+        graph.query(
+            """
+            UNWIND $edges AS e
+            MERGE (a:Cell {name: e.a, sid: $sid})
+            MERGE (b:Cell {name: e.b, sid: $sid})
+            MERGE (a)-[:READS]->(b)
+            """,
+            {"edges": edges, "sid": sid},
+        )
 
 
 def ask(sid, question):
