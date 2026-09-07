@@ -280,8 +280,9 @@ code, .mono { font-family: var(--mono); }
 /* 챗봇 답변 속 셀 주소 칩/버튼 — 클릭하면 왼쪽 원본 그리드의 그 셀로 이동.
    문장 속 인라인 코드 자리에도, 문장 밖 보조 줄에도 똑같이 쓰인다. */
 .chat-refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chat-ref-chip { display: inline-flex; align-items: center; vertical-align: -1px;
-  font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 20px;
+.chat-ref-chip { display: inline-flex; align-items: center; vertical-align: middle;
+  box-sizing: border-box; margin: 0 1px; line-height: 1;
+  font-family: var(--mono); font-size: 12px; padding: 4px 8px 3px; border-radius: 20px;
   border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
 .chat-ref-chip:hover { border-color: #217346; color: #217346; }
 .chat-msg.user .chat-ref-chip { border-color: rgba(0, 0, 0, .12); background: rgba(0, 0, 0, .04); color: var(--ink); }
