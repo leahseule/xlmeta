@@ -80,19 +80,23 @@ ChatGPT·Claude는 http 링크도 대개 읽지만, 프로덕션은 https가 안
 | `XLMETA_DATA_DIR` | `/data/summaries` | 요약 저장 경로 (볼륨) |
 | `OPENAI_API_KEY` | (없음) | Q&A·그래프 챗봇 켜는 키. 없으면 둘 다 비활성으로 정상 동작 |
 | `OPENAI_MODEL` | `gpt-4o-mini` | Q&A·챗봇에 쓰는 모델 |
-| `NEO4J_PASSWORD` | (없음, 필수) | 그래프 챗봇용. 서버 `.env`에 직접 정해서 넣는다(임의의 강한 비밀번호) |
+| `NEO4J_URI` | (없음) | 그래프 챗봇용. Neo4j Aura 콘솔에서 받은 연결 문자열(`neo4j+s://...`) |
+| `NEO4J_USERNAME` | `neo4j` | Aura 기본값 그대로 두면 됨 |
+| `NEO4J_PASSWORD` | (없음) | Aura 인스턴스 생성 시 한 번만 보여주는 비밀번호. 그때 저장해둘 것 |
 
-배포 전 서버에서 `.env` 파일에 `OPENAI_API_KEY=...`, `NEO4J_PASSWORD=...`를 넣어둘 것
-(compose가 같은 디렉토리의 `.env`를 자동으로 읽는다). `NEO4J_PASSWORD`가 없으면
-Neo4j 컨테이너가 시작에 실패한다(암호 없이 뜨는 것보단 안전한 실패).
+배포 전 서버에서 `.env` 파일에 `OPENAI_API_KEY=...`, `NEO4J_URI=...`, `NEO4J_PASSWORD=...`를
+넣어둘 것(compose가 같은 디렉토리의 `.env`를 자동으로 읽는다). 셋 중 하나라도 없으면
+그래프 챗봇 탭만 비활성으로 정상 동작한다(`graph_qa.available()`가 False).
 
-## 그래프 챗봇(Neo4j) — 보안 메모
+## 그래프 챗봇 — Neo4j Aura를 쓰는 이유, 보안 메모
 
-- **`neo4j` 서비스는 호스트 포트를 절대 열지 않는다.** xlmeta 컨테이너만 도커 내부망으로
-  `bolt://neo4j:7687`에 접근하고, 외부 인터넷에선 이 포트에 닿을 방법이 없다. 배포 시
-  실수로 `ports:`를 추가하지 말 것.
+- **Neo4j는 이 EC2에 직접 안 띄운다.** 2026-09-07에 로컬 Neo4j 컨테이너를 얹었다가
+  인스턴스 메모리(909MB, 프리티어)가 부족해 반복 OOM으로 SSH 접속까지 막히는 장애를
+  겪었다. Weave·xlmeta·Caddy만으로 이미 메모리가 빠듯해서, Neo4j를 아무리 작게 잡아도
+  이 인스턴스엔 여유가 없다. → **Neo4j Aura Free**(Neo4j 공식 무료 클라우드, 이 서버
+  밖에서 도는 별도 인스턴스)를 쓴다. `NEO4J_URI`만 Aura 주소로 바뀔 뿐, 코드는 로컬
+  Neo4j를 쓸 때와 동일하다(`neo4j` 파이썬 드라이버가 `neo4j+s://`도 그대로 처리함).
 - 챗봇이 실행하는 Cypher는 `routing_=READ`로 돌아서(`webapp/graph_qa.py`), Neo4j 서버가
   쓰기 쿼리 자체를 거부한다 — 프롬프트 인젝션으로 삭제/수정을 유도해도 서버 단에서 막힘.
-- **메모리**: Neo4j는 기본으로 컨테이너 메모리를 넉넉히 쓰려 하므로 `mem_limit: 1g`로
-  잡아뒀다. Weave·xlmeta·Caddy와 한 인스턴스를 같이 쓰므로, 배포 후 `docker stats`로
-  실제 메모리 여유를 보고 인스턴스가 버거우면 `mem_limit`을 낮추거나 인스턴스를 올릴 것.
+- 나중에 데이터 규모가 커져 Aura 무료 티어를 넘으면, 그때 가서 별도의(이 앱과 무관한)
+  전용 인스턴스에 Neo4j를 올리는 걸 고려할 것 — 이 EC2엔 다시 올리지 말 것.

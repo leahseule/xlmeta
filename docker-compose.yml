@@ -13,29 +13,15 @@ services:
       # 없으면 코어는 정상 동작하고 Q&A·챗봇만 꺼진 채(비활성) 나온다.
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      # 그래프 챗봇 전용. neo4j는 아래 서비스명이라 포트 노출 없이 내부통신으로 붙는다.
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USERNAME: neo4j
+      # 그래프 챗봇 전용. 로컬에 Neo4j를 안 띄우고 Neo4j Aura(무료 클라우드)를 쓴다 —
+      # 작은 인스턴스엔 Neo4j를 올릴 메모리 여유가 없어서(909MB 인스턴스에서 OOM 반복 겪음).
+      # Aura 콘솔에서 받은 값을 그대로 .env에 넣는다(URI는 neo4j+s://로 시작).
+      NEO4J_URI: ${NEO4J_URI:-}
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
     volumes:
       - xlmeta_data:/data         # /s/<id> 요약이 컨테이너 재시작에도 살아남게
-    depends_on:
-      - neo4j
-    restart: unless-stopped
-
-  # 그래프 챗봇 전용 DB. 호스트에 포트를 절대 열지 않는다(ports: 없음) — xlmeta 컨테이너만
-  # 도커 내부망으로 bolt://neo4j:7687에 접근. 공개 인터넷에서 접근 불가.
-  neo4j:
-    image: neo4j:5-community
-    container_name: neo4j
-    environment:
-      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-}
-      NEO4J_PLUGINS: '["apoc"]'   # graph_qa.py의 스키마 조회에 필요
-    volumes:
-      - neo4j_data:/data
-    mem_limit: 1g   # 인스턴스 사양 보고 조정할 것
     restart: unless-stopped
 
 volumes:
   xlmeta_data:
-  neo4j_data:
