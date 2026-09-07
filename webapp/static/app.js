@@ -1349,9 +1349,9 @@ async function sendChatMessage() {
   CHAT_MESSAGES.push({ role: "user", text: q });
   appendChatMsgEl("user").innerHTML = renderMarkdown(q);
 
-  const pending = { role: "bot", text: "생각 중…", cls: "loading" };
+  const pending = { role: "bot", text: "생각 중…", cls: "chat-loading" };
   CHAT_MESSAGES.push(pending);
-  const botEl = appendChatMsgEl("bot", "loading");
+  const botEl = appendChatMsgEl("bot", "chat-loading");
   botEl.textContent = "생각 중…";
 
   $("chatInput").disabled = true;

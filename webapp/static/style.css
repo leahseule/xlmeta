@@ -247,7 +247,7 @@ code, .mono { font-family: var(--mono); }
 .chat-msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--ink);
   padding: 10px 16px; border-radius: 20px; }
 .chat-msg.bot { align-self: stretch; max-width: 100%; background: transparent; padding: 14px 16px; }
-.chat-msg.bot.loading { color: var(--muted); }
+.chat-msg.bot.chat-loading { color: var(--muted); }
 .chat-msg.bot.err { color: #b25b00; background: #fff7ef; border-radius: 12px; padding: 10px 13px; }
 .chat-inputrow { flex: 0 0 auto; }
 
