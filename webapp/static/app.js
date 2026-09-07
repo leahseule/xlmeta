@@ -124,7 +124,7 @@ ${tableLines}
 - "회사명/코드로 관련된 다른 값(담당자, 금액 등)" 찾기
 - 같은 항목이 표마다 다르게 계산돼 있으면, 하나로 얼버무리지 않고 다 보여드려요
 
-답변에 나오는 📍 셀 주소를 누르면 왼쪽 표에서 그 칸으로 바로 이동해요. 편하게 물어보세요!`;
+답변에 나오는 셀 주소를 누르면 왼쪽 표에서 그 칸으로 바로 이동해요. 편하게 물어보세요!`;
 }
 
 // ── 시트 탭 ──────────────────────────────────────────────────
@@ -1227,7 +1227,7 @@ function renderMarkdown(text) {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/`([^`]+)`/g, (_, code) => {
       const m = CELL_REF_RE.exec(code);
-      if (m) return `<button class="chat-ref-chip" data-ref-sheet="${m[1]}" data-ref-a1="${m[2]}">📍 ${code}</button>`;
+      if (m) return `<button class="chat-ref-chip" data-ref-sheet="${m[1]}" data-ref-a1="${m[2]}">${code}</button>`;
       return `<code>${code}</code>`;
     });
 
@@ -1273,7 +1273,7 @@ function refChips(refs) {
     const bang = ref.indexOf("!");
     if (bang < 0) return "";
     const sheet = ref.slice(0, bang), a1 = ref.slice(bang + 1);
-    return `<button class="chat-ref-chip" data-ref-sheet="${esc(sheet)}" data-ref-a1="${esc(a1)}">📍 ${esc(ref)}</button>`;
+    return `<button class="chat-ref-chip" data-ref-sheet="${esc(sheet)}" data-ref-a1="${esc(a1)}">${esc(ref)}</button>`;
   }).join("");
   return `<div class="chat-refs">${chips}</div>`;
 }
