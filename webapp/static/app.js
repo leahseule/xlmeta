@@ -96,9 +96,33 @@ function onData(data) {
   renderSheetTabs();
   selectSheet(best);
 
-  CHAT_MESSAGES = [];
+  CHAT_MESSAGES = [{ role: "bot", text: welcomeMessage(data) }];
   switchPaneTab("interp");
   renderChat();
+}
+
+// 챗봇 탭을 열자마자 이 파일이 어떻게 생겼는지 개략적으로 설명 — 이미 분석된 data.sources를
+// 그대로 재사용(추가 API 호출 없이, 결정론적으로).
+function welcomeMessage(data) {
+  const sheetNames = (data.structure || []).map((s) => s.name).join(" · ");
+  const tableLines = (data.sources || []).map((t) => {
+    const name = t.title || t.range;
+    const cols = Object.values(t.columns || {}).join(" · ");
+    return `• ${t.sheet} 시트 — "${name}" (${t.row_count}행)\n   컬럼: ${cols}`;
+  }).join("\n");
+
+  return `안녕하세요, 저는 xlmeta 그래프 챗봇이에요.
+
+방금 올려주신 "${data.source_file}"을 살펴봤어요. 시트 ${(data.structure || []).length}개(${sheetNames}), 표 ${(data.sources || []).length}개, 계산값 지표 ${data.stats?.metrics ?? 0}개로 구성돼 있어요.
+
+${tableLines}
+
+왼쪽에 보이는 원본 표를 보시면서 궁금한 걸 편하게 질문해주세요. 예를 들면:
+• "OO 테이블에서 △△의 □□는 얼마야?" — 특정 항목의 값 찾기
+• "회사명/코드로 관련된 다른 값(담당자, 금액 등)" 찾기
+• 같은 항목이 표마다 다르게 계산돼 있으면, 하나로 얼버무리지 않고 다 보여드려요
+
+답변에 나오는 📍 셀 주소를 누르면 왼쪽 표에서 그 칸으로 바로 이동해요. 편하게 물어보세요!`;
 }
 
 // ── 시트 탭 ──────────────────────────────────────────────────
