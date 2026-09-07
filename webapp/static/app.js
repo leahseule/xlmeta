@@ -113,10 +113,12 @@ function welcomeMessage(data) {
 
   return `안녕하세요, 저는 xlmeta 그래프 챗봇이에요.
 
+### 이 파일 개요
 방금 올려주신 **"${data.source_file}"**을 살펴봤어요. 시트 **${(data.structure || []).length}개**(${sheetNames}), 표 **${(data.sources || []).length}개**, 계산값 지표 **${data.stats?.metrics ?? 0}개**로 구성돼 있어요.
 
 ${tableLines}
 
+### 이렇게 물어보세요
 왼쪽에 보이는 원본 표를 보시면서 궁금한 걸 편하게 질문해주세요. 예를 들면:
 - "OO 테이블에서 △△의 □□는 얼마야?" — 특정 항목의 값 찾기
 - "회사명/코드로 관련된 다른 값(담당자, 금액 등)" 찾기
@@ -1214,7 +1216,7 @@ function switchPaneTab(tab) {
 
 // ── 챗봇 탭: 그래프 Q&A (/api/ask-graph) ─────────────────────────
 
-// 아주 작은 마크다운 부분집합만 지원 — 굵게(**)·목록(- )·인라인 코드(`)·문단.
+// 아주 작은 마크다운 부분집합만 지원 — 소제목(#~###)·굵게(**)·목록(- )·인라인 코드(`)·문단.
 // esc()를 먼저 거친 다음에만 태그를 씌워서, 셀 값에 <script> 같은 게 섞여 있어도 안전하다.
 function renderMarkdown(text) {
   const inline = (s) => esc(s)
@@ -1227,8 +1229,13 @@ function renderMarkdown(text) {
 
   String(text ?? "").split("\n").forEach((raw) => {
     const line = raw.trim();
+    const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     const item = /^[-•]\s+(.*)$/.exec(line);
-    if (item) {
+    if (heading) {
+      closeList();
+      const level = heading[1].length + 3;   // #~### -> h4~h6 (말풍선 크기에 맞게)
+      html += `<h${level}>${inline(heading[2])}</h${level}>`;
+    } else if (item) {
       if (!inList) { html += "<ul>"; inList = true; }
       html += `<li>${inline(item[1])}</li>`;
     } else if (line === "") {
