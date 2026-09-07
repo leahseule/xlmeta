@@ -240,11 +240,12 @@ code, .mono { font-family: var(--mono); }
 .chatpanel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 16px 22px; }
 .chat-msgs { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
   padding-bottom: 12px; }
-.chat-msg { max-width: 85%; font-size: 14.5px; line-height: 1.65; }
-/* 사용자 메시지만 옅은 회색 알약 모양, 봇 답변은 말풍선 없이 배경에 바로 흐르게(제미나이 느낌) */
+.chat-msg { max-width: 85%; font-size: 13px; line-height: 1.6; }
+/* 사용자 메시지만 옅은 회색 알약 모양, 봇 답변은 말풍선 없이 배경에 바로 흐르게(제미나이 느낌) —
+   그래도 답변이라는 느낌이 나게 위아래·양옆에 여백을 넉넉히 준다. */
 .chat-msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--ink);
   padding: 10px 16px; border-radius: 20px; }
-.chat-msg.bot { align-self: stretch; max-width: 100%; background: transparent; padding: 2px 2px; }
+.chat-msg.bot { align-self: stretch; max-width: 100%; background: transparent; padding: 14px 4px; }
 .chat-msg.bot.loading { color: var(--muted); }
 .chat-msg.bot.err { color: #b25b00; background: #fff7ef; border-radius: 12px; padding: 10px 13px; }
 .chat-inputrow { flex: 0 0 auto; }
@@ -269,11 +270,11 @@ code, .mono { font-family: var(--mono); }
 .chat-msg p:last-child, .chat-msg ul:last-child { margin-bottom: 0; }
 .chat-msg h4, .chat-msg h5, .chat-msg h6 { margin: 12px 0 6px; line-height: 1.3; }
 .chat-msg > :first-child { margin-top: 0; }
-.chat-msg h4 { font-size: 15px; font-weight: 700; }
-.chat-msg h5 { font-size: 14px; font-weight: 700; }
-.chat-msg h6 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
+.chat-msg h4 { font-size: 13.5px; font-weight: 700; }
+.chat-msg h5 { font-size: 13px; font-weight: 700; }
+.chat-msg h6 { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
 .chat-msg strong { font-weight: 700; }
-.chat-msg code { font-family: var(--mono); font-size: 12.5px; background: var(--bg);
+.chat-msg code { font-family: var(--mono); font-size: 11.5px; background: var(--bg);
   padding: 1px 5px; border-radius: 5px; }
 .chat-msg.user code { background: rgba(0, 0, 0, .06); }
 
@@ -282,7 +283,7 @@ code, .mono { font-family: var(--mono); }
 .chat-refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chat-ref-chip { display: inline-flex; align-items: center; vertical-align: middle;
   box-sizing: border-box; margin: 0 1px; line-height: 1;
-  font-family: var(--mono); font-size: 12px; padding: 4px 8px 3px; border-radius: 20px;
+  font-family: var(--mono); font-size: 11px; padding: 4px 7px 3px; border-radius: 20px;
   border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
 .chat-ref-chip:hover { border-color: #217346; color: #217346; }
 .chat-msg.user .chat-ref-chip { border-color: rgba(0, 0, 0, .12); background: rgba(0, 0, 0, .04); color: var(--ink); }
