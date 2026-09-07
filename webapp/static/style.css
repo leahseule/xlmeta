@@ -7,7 +7,7 @@
   --accent: #0d0d0d;
   --accent-soft: #ededf0;
   --mono: ui-monospace, "SFMono-Regular", "Consolas", "D2Coding", monospace;
-  --sans: -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --sans: "Noto Sans KR", -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   --hi: #10a37f;
   --md: #a8791c;
   --lo: #9ca3af;
