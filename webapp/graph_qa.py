@@ -43,11 +43,18 @@ _LABELS = ["File", "Sheet", "Table", "Column", "Row", "Cell"]
 _LABEL_PATTERN = re.compile(r":(" + "|".join(_LABELS) + r")(\s*\{([^}]*)\})?")
 _REQUIRED_ENV = ("OPENAI_API_KEY", "NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD")
 
-CYPHER_PROMPT = PromptTemplate.from_template("""\
+_CYPHER_PROMPT_TEMPLATE = PromptTemplate.from_template("""\
 너는 스프레드시트 구조 그래프를 조회하는 Cypher를 짠다. 스키마:
 {schema}
 
+이 파일에 실제로 존재하는 Column 이름 전체 목록(이 목록에 있는 이름만 정확히 그대로 쓴다):
+{columns}
+
 규칙:
+- Column {{name: ...}}에 쓰는 값은 반드시 위 목록에 있는 이름 중 하나를 정확히 그대로 골라 쓴다.
+  질문에 나온 표현이 목록과 글자가 다르게 느껴져도(예: 질문엔 "예산 집행률"이라고 나왔는데
+  목록엔 "예산"과 "집행률"이 따로 있는 경우), 목록에 없는 이름을 지어내거나 합치지 말고
+  뜻이 가장 가까운 목록 속 이름 하나(또는 필요하면 여러 개)를 그대로 쓴다.
 - 텍스트 값(value, name, title)을 비교할 때는 '=' 대신 CONTAINS를 쓰고, 대소문자·띄어쓰기 차이를 무시하려면
   toLower(replace(toString(x), ' ', '')) CONTAINS toLower(replace('질문의 값', ' ', '')) 형태로 짠다.
   value 속성은 숫자일 수도 있으니 항상 toString()으로 먼저 문자열로 바꾼다.
@@ -88,6 +95,16 @@ WHERE toLower(replace(toString(codeCell.value), ' ', '')) CONTAINS toLower(repla
 WITH t, codeCell
 MATCH (t)-[:HAS_ROW]->(row:Row)-[:HAS_CELL]->(codeCell)
 MATCH (row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'담당자'}})
+RETURN targetCell.value AS 값, targetCell.name AS 셀
+
+예시 질문 4 (질문의 표현이 실제 컬럼 이름과 글자가 다른 경우 — 컬럼 목록에서 "예산 집행률"이
+없고 "예산"·"집행률"이 따로 있다면, 둘을 합친 이름을 지어내지 말고 목록에 있는 실제 이름
+"집행률"을 그대로 쓴다): "온산의 예산 집행률을 알려줘"
+예시 Cypher:
+MATCH (anchorCell:Cell)
+WHERE toLower(replace(toString(anchorCell.value), ' ', '')) CONTAINS toLower(replace('온산', ' ', ''))
+WITH anchorCell
+MATCH (anchorCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'집행률'}})
 RETURN targetCell.value AS 값, targetCell.name AS 셀
 
 - 다른 설명 없이 Cypher 쿼리만 출력한다.
@@ -160,6 +177,16 @@ def _plain_graph():
         username=os.environ["NEO4J_USERNAME"],
         password=os.environ["NEO4J_PASSWORD"],
     )
+
+
+def _column_names(sid):
+    """이 파일(sid)에 실제로 존재하는 Column.name 전체 목록. GPT가 컬럼명을 지어내지
+    않고 이 목록에서만 고르게 하는 데 쓴다(실제로 없는 이름을 지어내는 문제가 있었음)."""
+    rows = _plain_graph().query(
+        "MATCH (c:Column {sid: $sid}) RETURN DISTINCT c.name AS name",
+        {"sid": sid},
+    )
+    return sorted({r["name"] for r in rows if r.get("name")})
 
 
 def _scoped_graph(sid):
@@ -335,10 +362,13 @@ def ask(sid, question):
     from langchain_neo4j import GraphCypherQAChain
     from langchain_openai import ChatOpenAI
 
+    columns = _column_names(sid)
+    cypher_prompt = _CYPHER_PROMPT_TEMPLATE.partial(columns=", ".join(columns))
+
     chain = GraphCypherQAChain.from_llm(
         ChatOpenAI(model=model_name(), temperature=0),
         graph=_scoped_graph(sid),
-        cypher_prompt=CYPHER_PROMPT,
+        cypher_prompt=cypher_prompt,
         qa_prompt=QA_PROMPT,
         allow_dangerous_requests=True,
         return_intermediate_steps=True,
