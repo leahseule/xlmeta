@@ -343,16 +343,14 @@ def api_ask_graph():
     if not _load_summary(sid):
         return json_response({"error": "분석 결과를 찾을 수 없어요. 먼저 분석해 주세요."}, 404)
     try:
-        answer = graph_qa.ask(sid, question)
-        return json_response({"answer": answer, "model": graph_qa.model_name()})
+        answer, cell_refs = graph_qa.ask(sid, question)
+        return json_response({"answer": answer, "cell_refs": cell_refs, "model": graph_qa.model_name()})
     except graph_qa.NotConfigured:
         return json_response(
             {"error": "서버에 그래프 챗봇 설정이 안 돼 있습니다 "
                       "(OPENAI_API_KEY/NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD)."}, 503)
     except Exception as e:                          # noqa: BLE001  (Neo4j 연결 문제 등)
         return json_response({"error": f"그래프 질의 실패: {e}"}, 500)
-    except Exception as e:                          # noqa: BLE001
-        return json_response({"error": f"답변 생성 실패: {e}"}, 500)
 
 
 @app.post("/api/analyze")

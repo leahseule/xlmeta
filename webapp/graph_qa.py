@@ -55,6 +55,8 @@ CYPHER_PROMPT = PromptTemplate.from_template("""\
   Column(A)로 셀을 먼저 찾고 -> WITH로 그 결과를 확정지은 뒤 -> Row를 타고 -> Column(B)에 속한 Cell을 찾는다.
   두 MATCH를 WITH 없이 바로 이어 쓰면 Neo4j가 실행 순서를 섞어서 엉뚱한 셀을 훑을 수 있으니,
   반드시 첫 MATCH+WHERE 다음에 WITH로 경계를 끊는다.
+- 특정 Cell의 값을 답으로 반환할 때는, 그 값만 반환하지 말고 **그 Cell의 name(셀 주소, 예:
+  '원가현황!D6')도 항상 같이 RETURN**한다. 사용자가 그 셀로 바로 이동할 수 있게 하는 데 쓴다.
 
 예시 질문 1 (알려진 값이 어느 컬럼 값인지 질문에 명시된 경우): "프로젝트코드 P-9000의 담당자는?"
 예시 Cypher:
@@ -62,7 +64,7 @@ MATCH (codeCol:Column {{name:'프로젝트코드'}})-[:HAS_VALUE]->(codeCell:Cel
 WHERE toLower(replace(toString(codeCell.value), ' ', '')) CONTAINS toLower(replace('P-9000', ' ', ''))
 WITH codeCell
 MATCH (codeCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(targetCol:Column {{name:'담당자'}})
-RETURN targetCell.value
+RETURN targetCell.value AS 값, targetCell.name AS 셀
 
 예시 질문 2 (알려진 값이 어느 컬럼 값인지 질문에 안 나온 경우 — 컬럼명을 함부로 추측하지 말고,
 컬럼 제약 없이 값 자체로 셀을 먼저 찾는다): "동서기업의 담당자는?"
@@ -71,7 +73,7 @@ MATCH (anchorCell:Cell)
 WHERE toLower(replace(toString(anchorCell.value), ' ', '')) CONTAINS toLower(replace('동서기업', ' ', ''))
 WITH anchorCell
 MATCH (anchorCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(targetCol:Column {{name:'담당자'}})
-RETURN targetCell.value
+RETURN targetCell.value AS 값, targetCell.name AS 셀
 
 예시 질문 3 (질문에 표 이름까지 나온 경우 — 같은 이름의 컬럼이 다른 표에도 있을 수 있으니,
 Table로 먼저 범위를 좁히고 그 안에서만 코드도 찾고 답도 찾는다. 표 제목은 뒤에 다른 말이
@@ -86,7 +88,7 @@ WHERE toLower(replace(toString(codeCell.value), ' ', '')) CONTAINS toLower(repla
 WITH t, codeCell
 MATCH (t)-[:HAS_ROW]->(row:Row)-[:HAS_CELL]->(codeCell)
 MATCH (row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'담당자'}})
-RETURN targetCell.value
+RETURN targetCell.value AS 값, targetCell.name AS 셀
 
 - 다른 설명 없이 Cypher 쿼리만 출력한다.
 
@@ -304,8 +306,24 @@ def load_structured_graph(sid, result):
         )
 
 
+_CELL_REF_RE = re.compile(r"^.+![A-Z]+\d+$")
+
+
+def _collect_cell_refs(value, found):
+    """context(list/dict가 중첩된 구조) 안에서 '시트!주소' 모양 문자열만 골라낸다."""
+    if isinstance(value, str):
+        if _CELL_REF_RE.match(value):
+            found.add(value)
+    elif isinstance(value, dict):
+        for v in value.values():
+            _collect_cell_refs(v, found)
+    elif isinstance(value, list):
+        for v in value:
+            _collect_cell_refs(v, found)
+
+
 def ask(sid, question):
-    """이 파일(sid)의 구조 그래프에 자연어로 질문 -> Cypher 생성·실행 -> 자연어 답변."""
+    """이 파일(sid)의 구조 그래프에 자연어로 질문 -> Cypher 생성·실행 -> (자연어 답변, 근거 셀 주소 목록)."""
     _require_env()
     from langchain_neo4j import GraphCypherQAChain
     from langchain_openai import ChatOpenAI
@@ -316,6 +334,15 @@ def ask(sid, question):
         cypher_prompt=CYPHER_PROMPT,
         qa_prompt=QA_PROMPT,
         allow_dangerous_requests=True,
+        return_intermediate_steps=True,
     )
     result = chain.invoke({"query": question})
-    return result["result"]
+
+    context = next(
+        (step["context"] for step in result.get("intermediate_steps", []) if "context" in step),
+        [],
+    )
+    cell_refs = set()
+    _collect_cell_refs(context, cell_refs)
+
+    return result["result"], sorted(cell_refs)

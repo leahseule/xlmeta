@@ -1189,10 +1189,22 @@ function switchPaneTab(tab) {
 }
 
 // ── 챗봇 탭: 그래프 Q&A (/api/ask-graph) ─────────────────────────
+// "시트!A1" 형태의 셀 주소를 클릭 가능한 칩으로 (클릭하면 왼쪽 원본 그리드로 이동)
+function refChips(refs) {
+  if (!refs || !refs.length) return "";
+  const chips = refs.map((ref) => {
+    const bang = ref.indexOf("!");
+    if (bang < 0) return "";
+    const sheet = ref.slice(0, bang), a1 = ref.slice(bang + 1);
+    return `<button class="chat-ref-chip" data-ref-sheet="${esc(sheet)}" data-ref-a1="${esc(a1)}">📍 ${esc(ref)}</button>`;
+  }).join("");
+  return `<div class="chat-refs">${chips}</div>`;
+}
+
 function renderChat() {
   const box = $("chatMsgs");
   box.innerHTML = CHAT_MESSAGES.map(
-    (m) => `<div class="chat-msg ${m.role} ${m.cls || ""}">${esc(m.text)}</div>`
+    (m) => `<div class="chat-msg ${m.role} ${m.cls || ""}">${esc(m.text)}${refChips(m.cellRefs)}</div>`
   ).join("");
   box.scrollTop = box.scrollHeight;
 
@@ -1221,6 +1233,7 @@ async function sendChatMessage() {
     const d = await r.json();
     if (!r.ok || d.error) throw new Error(d.error || "답변 실패");
     pending.text = d.answer || "(빈 답변)";
+    pending.cellRefs = d.cell_refs || [];
     pending.cls = "";
   } catch (e) {
     pending.text = "⚠ " + e.message;
@@ -1237,6 +1250,11 @@ function initChatPanel() {
   });
   $("chatSendBtn").onclick = sendChatMessage;
   $("chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendChatMessage(); });
+  $("chatMsgs").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chat-ref-chip");
+    if (!chip) return;
+    flashCell(chip.dataset.refSheet, chip.dataset.refA1);
+  });
 }
 
 initLanding();

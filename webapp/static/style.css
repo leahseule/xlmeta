@@ -249,6 +249,12 @@ code, .mono { font-family: var(--mono); }
 .chat-msg.bot.err { color: #b25b00; border-color: #f0c7a0; background: #fff7ef; }
 .chat-inputrow { flex: 0 0 auto; }
 
+/* 챗봇 답변 속 셀 주소 칩 — 클릭하면 왼쪽 원본 그리드의 그 셀로 이동 */
+.chat-refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chat-ref-chip { font-family: var(--mono); font-size: 12px; padding: 3px 9px; border-radius: 20px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.chat-ref-chip:hover { border-color: #217346; color: #217346; }
+
 /* 왼쪽 격자 */
 .gridscroll { flex: 1 1 auto; overflow: auto; min-height: 0; }
 table.xlgrid { border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
