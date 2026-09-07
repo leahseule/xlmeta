@@ -1314,18 +1314,30 @@ function streamMarkdownInto(el, fullText, { speed = 12, chunk = 3 } = {}) {
   });
 }
 
-// 스트리밍이 끝난 뒤 — 답변 문장에 안 나온 셀 주소만 보조 칩으로 덧붙인다.
+// 스트리밍이 끝난 뒤 — 답변 문장에 안 나온 셀 주소만 보조 칩으로, 그리고 복사 버튼을 덧붙인다.
 function finalizeBotMsgEl(el, text, cellRefs) {
   const inlineRefs = refsMentionedInline(text);
   const extraRefs = (cellRefs || []).filter((r) => !inlineRefs.has(r));
   el.insertAdjacentHTML("beforeend", refChips(extraRefs));
+
+  const actions = document.createElement("div");
+  actions.className = "chat-actions";
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "chat-copy-btn";
+  copyBtn.title = "답변 복사";
+  copyBtn.innerHTML = IC_COPY;
+  copyBtn.onclick = () => copyText(text);
+  actions.appendChild(copyBtn);
+  el.appendChild(actions);
 }
 
-function startChatWithWelcome(data) {
+async function startChatWithWelcome(data) {
   $("chatMsgs").innerHTML = "";
   updateChatInputEnabled();
   const el = appendChatMsgEl("bot");
-  streamMarkdownInto(el, welcomeMessage(data));
+  const text = welcomeMessage(data);
+  await streamMarkdownInto(el, text);
+  finalizeBotMsgEl(el, text, []);
 }
 
 async function sendChatMessage() {

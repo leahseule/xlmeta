@@ -287,6 +287,14 @@ code, .mono { font-family: var(--mono); }
   font-family: var(--mono); font-size: 11px; padding: 4px 7px 3px; border-radius: 20px;
   border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
 .chat-ref-chip:hover { border-color: #217346; color: #217346; }
+
+/* 답변 아래 작은 액션 아이콘 줄 (지금은 복사만) */
+.chat-actions { margin-top: 8px; display: flex; gap: 2px; }
+.chat-copy-btn { display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--muted); cursor: pointer; }
+.chat-copy-btn svg { width: 14px; height: 14px; }
+.chat-copy-btn:hover { background: var(--accent-soft); color: var(--ink); }
 .chat-msg.user .chat-ref-chip { border-color: rgba(0, 0, 0, .12); background: rgba(0, 0, 0, .04); color: var(--ink); }
 
 /* 왼쪽 격자 */
