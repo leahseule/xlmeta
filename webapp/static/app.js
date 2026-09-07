@@ -1216,12 +1216,20 @@ function switchPaneTab(tab) {
 
 // ── 챗봇 탭: 그래프 Q&A (/api/ask-graph) ─────────────────────────
 
+// "시트!A1" 형태인지 확인 (인라인 코드 안의 셀 주소를 버튼으로 바꿀지 판단하는 데 씀)
+const CELL_REF_RE = /^(.+)!([A-Z]+\d+)$/;
+
 // 아주 작은 마크다운 부분집합만 지원 — 소제목(#~###)·굵게(**)·목록(- )·인라인 코드(`)·문단.
 // esc()를 먼저 거친 다음에만 태그를 씌워서, 셀 값에 <script> 같은 게 섞여 있어도 안전하다.
+// 인라인 코드가 셀 주소 모양이면 그 자리에서 바로 클릭 가능한 버튼으로 바꾼다.
 function renderMarkdown(text) {
   const inline = (s) => esc(s)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
+    .replace(/`([^`]+)`/g, (_, code) => {
+      const m = CELL_REF_RE.exec(code);
+      if (m) return `<button class="chat-ref-chip" data-ref-sheet="${m[1]}" data-ref-a1="${m[2]}">📍 ${code}</button>`;
+      return `<code>${code}</code>`;
+    });
 
   let html = "";
   let inList = false;
@@ -1249,7 +1257,16 @@ function renderMarkdown(text) {
   return html;
 }
 
-// "시트!A1" 형태의 셀 주소를 클릭 가능한 칩으로 (클릭하면 왼쪽 원본 그리드로 이동)
+// 답변 문장 안 인라인 코드로 이미 언급된 셀 주소 집합 (중복으로 또 칩을 안 만들려고)
+function refsMentionedInline(text) {
+  const found = new Set();
+  const re = /`([^`]+!([A-Z]+\d+))`/g;
+  let m;
+  while ((m = re.exec(text || "")) !== null) found.add(m[1]);
+  return found;
+}
+
+// 답변 문장에서 언급 안 된 셀 주소만 — 문장 밖에 보조 칩으로 (보통은 다 인라인으로 나와서 빈 경우가 많음)
 function refChips(refs) {
   if (!refs || !refs.length) return "";
   const chips = refs.map((ref) => {
@@ -1263,9 +1280,11 @@ function refChips(refs) {
 
 function renderChat() {
   const box = $("chatMsgs");
-  box.innerHTML = CHAT_MESSAGES.map(
-    (m) => `<div class="chat-msg ${m.role} ${m.cls || ""}">${renderMarkdown(m.text)}${refChips(m.cellRefs)}</div>`
-  ).join("");
+  box.innerHTML = CHAT_MESSAGES.map((m) => {
+    const inlineRefs = refsMentionedInline(m.text);
+    const extraRefs = (m.cellRefs || []).filter((r) => !inlineRefs.has(r));
+    return `<div class="chat-msg ${m.role} ${m.cls || ""}">${renderMarkdown(m.text)}${refChips(extraRefs)}</div>`;
+  }).join("");
   box.scrollTop = box.scrollHeight;
 
   const on = !!(DATA && DATA.graph_qa_on);
