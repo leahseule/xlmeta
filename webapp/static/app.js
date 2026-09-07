@@ -97,7 +97,7 @@ function onData(data) {
   selectSheet(best);
 
   CHAT_MESSAGES = [{ role: "bot", text: welcomeMessage(data) }];
-  switchPaneTab("interp");
+  switchPaneTab("chat");
   startChatWithWelcome(data);
 }
 
@@ -336,6 +336,7 @@ function applyHighlight() {
 
 // ── 오른쪽: 해석 ─────────────────────────────────────────────
 function renderInterp() {
+  switchPaneTab("interp");   // 왼쪽 그리드·시트탭 클릭 등 '해석'이 갱신되는 모든 경로에서 자동으로 이 탭으로
   const sheet = STRUCT[CUR_SHEET];
   const crumbs = [{ label: `${sheet.name} 개요`, kind: "overview", key: null }];
   let body = "";
