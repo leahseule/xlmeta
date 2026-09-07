@@ -240,14 +240,23 @@ code, .mono { font-family: var(--mono); }
 .chatpanel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 16px 22px; }
 .chat-msgs { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
   padding-bottom: 12px; }
-.chat-msg { max-width: 85%; padding: 10px 13px; border-radius: 12px; font-size: 14px; line-height: 1.55;
-  white-space: pre-wrap; }
+.chat-msg { max-width: 85%; padding: 10px 13px; border-radius: 12px; font-size: 14px; line-height: 1.55; }
 .chat-msg.user { align-self: flex-end; background: #217346; color: #fff; border-bottom-right-radius: 3px; }
 .chat-msg.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--line);
   border-bottom-left-radius: 3px; }
 .chat-msg.bot.loading { color: var(--muted); }
 .chat-msg.bot.err { color: #b25b00; border-color: #f0c7a0; background: #fff7ef; }
 .chat-inputrow { flex: 0 0 auto; }
+
+/* 챗봇 답변 속 마크다운(굵게·목록·인라인 코드·문단) */
+.chat-msg p { margin: 0 0 8px; }
+.chat-msg ul { margin: 4px 0 8px; padding-left: 20px; }
+.chat-msg li { margin: 2px 0; }
+.chat-msg p:last-child, .chat-msg ul:last-child { margin-bottom: 0; }
+.chat-msg strong { font-weight: 700; }
+.chat-msg code { font-family: var(--mono); font-size: 12.5px; background: var(--bg);
+  padding: 1px 5px; border-radius: 5px; }
+.chat-msg.user code { background: rgba(255, 255, 255, .2); }
 
 /* 챗봇 답변 속 셀 주소 칩 — 클릭하면 왼쪽 원본 그리드의 그 셀로 이동 */
 .chat-refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }

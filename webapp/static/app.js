@@ -108,19 +108,19 @@ function welcomeMessage(data) {
   const tableLines = (data.sources || []).map((t) => {
     const name = t.title || t.range;
     const cols = Object.values(t.columns || {}).join(" · ");
-    return `• ${t.sheet} 시트 — "${name}" (${t.row_count}행)\n   컬럼: ${cols}`;
+    return `- **${t.sheet}** — "${name}" (${t.row_count}행): ${cols}`;
   }).join("\n");
 
   return `안녕하세요, 저는 xlmeta 그래프 챗봇이에요.
 
-방금 올려주신 "${data.source_file}"을 살펴봤어요. 시트 ${(data.structure || []).length}개(${sheetNames}), 표 ${(data.sources || []).length}개, 계산값 지표 ${data.stats?.metrics ?? 0}개로 구성돼 있어요.
+방금 올려주신 **"${data.source_file}"**을 살펴봤어요. 시트 **${(data.structure || []).length}개**(${sheetNames}), 표 **${(data.sources || []).length}개**, 계산값 지표 **${data.stats?.metrics ?? 0}개**로 구성돼 있어요.
 
 ${tableLines}
 
 왼쪽에 보이는 원본 표를 보시면서 궁금한 걸 편하게 질문해주세요. 예를 들면:
-• "OO 테이블에서 △△의 □□는 얼마야?" — 특정 항목의 값 찾기
-• "회사명/코드로 관련된 다른 값(담당자, 금액 등)" 찾기
-• 같은 항목이 표마다 다르게 계산돼 있으면, 하나로 얼버무리지 않고 다 보여드려요
+- "OO 테이블에서 △△의 □□는 얼마야?" — 특정 항목의 값 찾기
+- "회사명/코드로 관련된 다른 값(담당자, 금액 등)" 찾기
+- 같은 항목이 표마다 다르게 계산돼 있으면, 하나로 얼버무리지 않고 다 보여드려요
 
 답변에 나오는 📍 셀 주소를 누르면 왼쪽 표에서 그 칸으로 바로 이동해요. 편하게 물어보세요!`;
 }
@@ -1213,6 +1213,35 @@ function switchPaneTab(tab) {
 }
 
 // ── 챗봇 탭: 그래프 Q&A (/api/ask-graph) ─────────────────────────
+
+// 아주 작은 마크다운 부분집합만 지원 — 굵게(**)·목록(- )·인라인 코드(`)·문단.
+// esc()를 먼저 거친 다음에만 태그를 씌워서, 셀 값에 <script> 같은 게 섞여 있어도 안전하다.
+function renderMarkdown(text) {
+  const inline = (s) => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
+
+  let html = "";
+  let inList = false;
+  const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+
+  String(text ?? "").split("\n").forEach((raw) => {
+    const line = raw.trim();
+    const item = /^[-•]\s+(.*)$/.exec(line);
+    if (item) {
+      if (!inList) { html += "<ul>"; inList = true; }
+      html += `<li>${inline(item[1])}</li>`;
+    } else if (line === "") {
+      closeList();
+    } else {
+      closeList();
+      html += `<p>${inline(line)}</p>`;
+    }
+  });
+  closeList();
+  return html;
+}
+
 // "시트!A1" 형태의 셀 주소를 클릭 가능한 칩으로 (클릭하면 왼쪽 원본 그리드로 이동)
 function refChips(refs) {
   if (!refs || !refs.length) return "";
@@ -1228,7 +1257,7 @@ function refChips(refs) {
 function renderChat() {
   const box = $("chatMsgs");
   box.innerHTML = CHAT_MESSAGES.map(
-    (m) => `<div class="chat-msg ${m.role} ${m.cls || ""}">${esc(m.text)}${refChips(m.cellRefs)}</div>`
+    (m) => `<div class="chat-msg ${m.role} ${m.cls || ""}">${renderMarkdown(m.text)}${refChips(m.cellRefs)}</div>`
   ).join("");
   box.scrollTop = box.scrollHeight;
 
