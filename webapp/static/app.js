@@ -98,7 +98,7 @@ function onData(data) {
 
   CHAT_MESSAGES = [{ role: "bot", text: welcomeMessage(data) }];
   switchPaneTab("interp");
-  renderChat();
+  startChatWithWelcome(data);
 }
 
 // 챗봇 탭을 열자마자 이 파일이 어떻게 생겼는지 개략적으로 설명 — 이미 분석된 data.sources를
@@ -1278,19 +1278,53 @@ function refChips(refs) {
   return `<div class="chat-refs">${chips}</div>`;
 }
 
-function renderChat() {
-  const box = $("chatMsgs");
-  box.innerHTML = CHAT_MESSAGES.map((m) => {
-    const inlineRefs = refsMentionedInline(m.text);
-    const extraRefs = (m.cellRefs || []).filter((r) => !inlineRefs.has(r));
-    return `<div class="chat-msg ${m.role} ${m.cls || ""}">${renderMarkdown(m.text)}${refChips(extraRefs)}</div>`;
-  }).join("");
-  box.scrollTop = box.scrollHeight;
-
+function updateChatInputEnabled() {
   const on = !!(DATA && DATA.graph_qa_on);
   $("chatInput").disabled = !on;
   $("chatSendBtn").disabled = !on;
   $("chatNote").hidden = on;
+}
+
+// 메시지 하나를 위한 빈 말풍선 DOM을 만들어 붙인다 (내용은 나중에 채움 — 스트리밍용).
+function appendChatMsgEl(role, cls) {
+  const box = $("chatMsgs");
+  const el = document.createElement("div");
+  el.className = `chat-msg ${role} ${cls || ""}`;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+  return el;
+}
+
+// 마크다운 텍스트를 타이핑되듯 조금씩 렌더링 — 서버가 토큰을 스트리밍하는 건 아니고,
+// 답을 다 받은 뒤 화면에서 점진적으로 보여주는 연출이다. 매 틱마다 지금까지의 부분
+// 문자열을 다시 마크다운 렌더링하므로, 문법이 아직 안 닫힌 채로 잠깐 보일 수 있지만
+// (예: 여는 **만 있고 닫는 **는 아직 안 옴) 끝나면 정상적으로 자리 잡는다.
+function streamMarkdownInto(el, fullText, { speed = 12, chunk = 3 } = {}) {
+  const box = $("chatMsgs");
+  let i = 0;
+  return new Promise((resolve) => {
+    (function tick() {
+      i = Math.min(fullText.length, i + chunk);
+      el.innerHTML = renderMarkdown(fullText.slice(0, i));
+      box.scrollTop = box.scrollHeight;
+      if (i < fullText.length) setTimeout(tick, speed);
+      else resolve();
+    })();
+  });
+}
+
+// 스트리밍이 끝난 뒤 — 답변 문장에 안 나온 셀 주소만 보조 칩으로 덧붙인다.
+function finalizeBotMsgEl(el, text, cellRefs) {
+  const inlineRefs = refsMentionedInline(text);
+  const extraRefs = (cellRefs || []).filter((r) => !inlineRefs.has(r));
+  el.insertAdjacentHTML("beforeend", refChips(extraRefs));
+}
+
+function startChatWithWelcome(data) {
+  $("chatMsgs").innerHTML = "";
+  updateChatInputEnabled();
+  const el = appendChatMsgEl("bot");
+  streamMarkdownInto(el, welcomeMessage(data));
 }
 
 async function sendChatMessage() {
@@ -1298,10 +1332,15 @@ async function sendChatMessage() {
   const q = input.value.trim();
   if (!q || !DATA || !DATA.share) return;
   input.value = "";
+
   CHAT_MESSAGES.push({ role: "user", text: q });
+  appendChatMsgEl("user").innerHTML = renderMarkdown(q);
+
   const pending = { role: "bot", text: "생각 중…", cls: "loading" };
   CHAT_MESSAGES.push(pending);
-  renderChat();
+  const botEl = appendChatMsgEl("bot", "loading");
+  botEl.textContent = "생각 중…";
+
   $("chatInput").disabled = true;
   $("chatSendBtn").disabled = true;
   try {
@@ -1314,11 +1353,16 @@ async function sendChatMessage() {
     pending.text = d.answer || "(빈 답변)";
     pending.cellRefs = d.cell_refs || [];
     pending.cls = "";
+    botEl.className = "chat-msg bot";
+    await streamMarkdownInto(botEl, pending.text);
+    finalizeBotMsgEl(botEl, pending.text, pending.cellRefs);
   } catch (e) {
     pending.text = "⚠ " + e.message;
     pending.cls = "err";
+    botEl.className = "chat-msg bot err";
+    botEl.innerHTML = renderMarkdown(pending.text);
   } finally {
-    renderChat();
+    updateChatInputEnabled();
   }
 }
 
