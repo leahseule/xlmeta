@@ -108,10 +108,12 @@
       <div class="interp" id="interp"></div>
       <div class="chatpanel hidden" id="chatPanel">
         <div class="chat-msgs" id="chatMsgs"></div>
-        <div class="ask-row chat-inputrow">
-          <input id="chatInput" class="ask-input" type="text" autocomplete="off"
-                 placeholder="예: 서산 석유화학 계약금액 얼마야? 원가현황 테이블에서 P-2402의 발생원가는?"/>
-          <button id="chatSendBtn" class="ask-btn">보내기</button>
+        <div class="chat-inputrow">
+          <div class="chat-input-pill">
+            <input id="chatInput" class="chat-input-field" type="text" autocomplete="off"
+                   placeholder="예: 서산 석유화학 계약금액 얼마야? 원가현황 테이블에서 P-2402의 발생원가는?"/>
+            <button id="chatSendBtn" class="chat-send-btn">보내기</button>
+          </div>
         </div>
         <p class="ask-note" id="chatNote" hidden>⚠ 그래프 챗봇이 꺼져 있어요.</p>
       </div>
