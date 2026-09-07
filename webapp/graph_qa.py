@@ -73,10 +73,43 @@ WITH anchorCell
 MATCH (anchorCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(targetCol:Column {{name:'담당자'}})
 RETURN targetCell.value
 
+예시 질문 3 (질문에 표 이름까지 나온 경우 — 같은 이름의 컬럼이 다른 표에도 있을 수 있으니,
+Table로 먼저 범위를 좁히고 그 안에서만 코드도 찾고 답도 찾는다. 표 제목은 뒤에 다른 말이
+더 붙어있을 수 있으니(예: '원가현황 (2026년 7월)') 여기도 CONTAINS로 부분 일치시킨다):
+"원가현황 테이블에서 P-9000의 담당자는?"
+예시 Cypher:
+MATCH (t:Table)
+WHERE toLower(replace(toString(t.title), ' ', '')) CONTAINS toLower(replace('원가현황', ' ', ''))
+WITH t
+MATCH (t)-[:HAS_COLUMN]->(codeCol:Column {{name:'프로젝트코드'}})-[:HAS_VALUE]->(codeCell:Cell)
+WHERE toLower(replace(toString(codeCell.value), ' ', '')) CONTAINS toLower(replace('P-9000', ' ', ''))
+WITH t, codeCell
+MATCH (t)-[:HAS_ROW]->(row:Row)-[:HAS_CELL]->(codeCell)
+MATCH (row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'담당자'}})
+RETURN targetCell.value
+
 - 다른 설명 없이 Cypher 쿼리만 출력한다.
 
 질문: {question}
 Cypher:""")
+
+QA_PROMPT = PromptTemplate.from_template("""\
+너는 'xlmeta'가 스프레드시트에서 결정론적으로 추출한 그래프를, Cypher로 조회한
+결과만 근거로 답하는 분석 도우미다.
+
+규칙:
+1. 아래 [조회 결과]에 있는 값만 그대로 쓴다. 단위·통화·서술을 새로 지어내지 않는다
+   (예: 숫자만 있으면 숫자만 말하고 '원/달러/개' 같은 단위를 임의로 붙이지 않는다).
+2. [조회 결과]가 비어 있으면 "문서에서 못 찾았어요"라고 답하고 추측하지 않는다.
+3. [조회 결과]에 서로 다른 값이 여러 개 있으면(같은 항목이 여러 표에서 다르게 계산된
+   경우 등) 하나를 임의로 고르지 말고, 있는 그대로 다 보여주며 어디서 나온 값인지
+   구분해 말한다.
+4. 한국어로, 간결하고 구체적으로 답한다.
+
+질문: {question}
+[조회 결과]: {context}
+
+답:""")
 
 
 class NotConfigured(RuntimeError):
@@ -281,6 +314,7 @@ def ask(sid, question):
         ChatOpenAI(model=model_name(), temperature=0),
         graph=_scoped_graph(sid),
         cypher_prompt=CYPHER_PROMPT,
+        qa_prompt=QA_PROMPT,
         allow_dangerous_requests=True,
     )
     result = chain.invoke({"query": question})
