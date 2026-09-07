@@ -279,6 +279,12 @@ code, .mono { font-family: var(--mono); }
   padding: 1px 5px; border-radius: 5px; }
 .chat-msg.user code { background: rgba(0, 0, 0, .06); }
 
+/* 챗봇 답변 속 표(여러 행을 나열하는 답변용) */
+.chat-msg .chat-table { border-collapse: collapse; margin: 6px 0 10px; width: 100%; font-size: 12.5px; }
+.chat-msg .chat-table th, .chat-msg .chat-table td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.chat-msg .chat-table th { background: var(--bg); font-weight: 700; color: var(--muted); }
+.chat-msg .chat-table:last-child { margin-bottom: 0; }
+
 /* 챗봇 답변 속 셀 주소 칩/버튼 — 클릭하면 왼쪽 원본 그리드의 그 셀로 이동.
    문장 속 인라인 코드 자리에도, 문장 밖 보조 줄에도 똑같이 쓰인다. */
 .chat-refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }

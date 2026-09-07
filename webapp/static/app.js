@@ -1220,9 +1220,16 @@ function switchPaneTab(tab) {
 // "시트!A1" 형태인지 확인 (인라인 코드 안의 셀 주소를 버튼으로 바꿀지 판단하는 데 씀)
 const CELL_REF_RE = /^(.+)!([A-Z]+\d+)$/;
 
-// 아주 작은 마크다운 부분집합만 지원 — 소제목(#~###)·굵게(**)·목록(- )·인라인 코드(`)·문단.
+// 아주 작은 마크다운 부분집합만 지원 — 소제목(#~###)·굵게(**)·목록(- )·인라인 코드(`)·표·문단.
 // esc()를 먼저 거친 다음에만 태그를 씌워서, 셀 값에 <script> 같은 게 섞여 있어도 안전하다.
 // 인라인 코드가 셀 주소 모양이면 그 자리에서 바로 클릭 가능한 버튼으로 바꾼다.
+const _TABLE_ROW_RE = /^\|(.+)\|$/;
+const _TABLE_SEP_RE = /^\|?[\s:|-]+\|?$/;
+
+function _splitTableRow(line) {
+  return _TABLE_ROW_RE.exec(line)[1].split("|").map((c) => c.trim());
+}
+
 function renderMarkdown(text) {
   const inline = (s) => esc(s)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -1232,12 +1239,31 @@ function renderMarkdown(text) {
       return `<code>${code}</code>`;
     });
 
+  const lines = String(text ?? "").split("\n");
   let html = "";
   let inList = false;
   const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
 
-  String(text ?? "").split("\n").forEach((raw) => {
-    const line = raw.trim();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // 표: "| .. |" 줄 다음이 "| --- | --- |" 구분선이면 표로 인식하고, 이어지는
+    // 데이터 행들을 한꺼번에 소비한다.
+    if (_TABLE_ROW_RE.test(line) && i + 1 < lines.length && _TABLE_SEP_RE.test(lines[i + 1].trim()) && lines[i + 1].includes("-")) {
+      closeList();
+      const head = _splitTableRow(line);
+      const rows = [];
+      let j = i + 2;
+      while (j < lines.length && _TABLE_ROW_RE.test(lines[j].trim())) {
+        rows.push(_splitTableRow(lines[j].trim()));
+        j++;
+      }
+      html += `<table class="chat-table"><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead>`
+        + `<tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+      i = j - 1;
+      continue;
+    }
+
     const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     const item = /^[-•]\s+(.*)$/.exec(line);
     if (heading) {
@@ -1253,7 +1279,7 @@ function renderMarkdown(text) {
       closeList();
       html += `<p>${inline(line)}</p>`;
     }
-  });
+  }
   closeList();
   return html;
 }

@@ -50,11 +50,19 @@ _CYPHER_PROMPT_TEMPLATE = PromptTemplate.from_template("""\
 이 파일에 실제로 존재하는 Column 이름 전체 목록(이 목록에 있는 이름만 정확히 그대로 쓴다):
 {columns}
 
+이 파일에 실제로 존재하는 Table 제목 전체 목록(Table을 필터로 쓸 땐 이 목록에 있는
+제목만 쓴다):
+{tables}
+
 규칙:
 - Column {{name: ...}}에 쓰는 값은 반드시 위 목록에 있는 이름 중 하나를 정확히 그대로 골라 쓴다.
   질문에 나온 표현이 목록과 글자가 다르게 느껴져도(예: 질문엔 "예산 집행률"이라고 나왔는데
   목록엔 "예산"과 "집행률"이 따로 있는 경우), 목록에 없는 이름을 지어내거나 합치지 말고
   뜻이 가장 가까운 목록 속 이름 하나(또는 필요하면 여러 개)를 그대로 쓴다.
+- Table {{title: ...}}로 범위를 좁히는 건, **질문에 실제로 표/테이블 이름이 언급됐을 때만**
+  한다. 질문에 나온 단어(예: "전체 프로젝트 집행률"의 "프로젝트")를 표 이름으로 함부로
+  추측해서 Table 필터를 넣지 않는다 — 그 단어가 위 Table 목록에 없으면 표 이름이 아니다.
+  표 이름이 질문에 없으면 Table 필터 없이 Column/Cell만으로 찾는다.
 - 텍스트 값(value, name, title)을 비교할 때는 '=' 대신 CONTAINS를 쓰고, 대소문자·띄어쓰기 차이를 무시하려면
   toLower(replace(toString(x), ' ', '')) CONTAINS toLower(replace('질문의 값', ' ', '')) 형태로 짠다.
   value 속성은 숫자일 수도 있으니 항상 toString()으로 먼저 문자열로 바꾼다.
@@ -134,6 +142,18 @@ MATCH (a2)<-[:HAS_CELL]-(row2:Row)-[:HAS_CELL]->(t2:Cell)<-[:HAS_VALUE]-(:Column
 RETURN t1.value AS 값1, t1.name AS 셀1, t2.value AS 값2, t2.name AS 셀2,
        (toFloat(t1.value) + toFloat(t2.value)) AS 합계
 
+예시 질문 6 (표 전체에서 한 컬럼 값을 행마다 다 나열해달라는 경우 — 값만 나열하면 어느
+행인지 알 수 없으니, 각 행을 구분할 이름표 컬럼(보통 이름·명이 들어간 컬럼. 없으면
+프로젝트코드 같은 식별자 컬럼)도 같이 찾아서 짝지어 반환한다. 값이 없는 행(합계·소계 등)은
+WHERE ... IS NOT NULL로 걸러낸다. 질문에 표 이름이 안 나왔으면 Table 필터 없이 컬럼만으로
+찾는다 — "전체 프로젝트"의 "프로젝트"는 표 이름이 아니다): "전체 프로젝트 집행률 확인해줘"
+예시 Cypher:
+MATCH (labelCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'프로젝트명'}})
+MATCH (labelCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(valueCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'집행률'}})
+WHERE valueCell.value IS NOT NULL
+RETURN labelCell.value AS 프로젝트명, valueCell.value AS 집행률, valueCell.name AS 셀
+ORDER BY labelCell.value
+
 - 다른 설명 없이 Cypher 쿼리만 출력한다.
 
 질문: {question}
@@ -164,13 +184,26 @@ QA_PROMPT = PromptTemplate.from_template("""\
    값에 붙은 `.0`(예: 252000000.0)은 그냥 정수로 보여준다. 큰 금액은 천 단위
    구분 쉼표(예: 252,000,000)를 넣어서 읽기 쉽게 한다 — 값 자체를 바꾸는 게
    아니라 표기만 다듬는 것이므로 규칙 1(지어내지 않기)에 어긋나지 않는다.
-6. 마크다운으로 답한다: 핵심 숫자·값은 **굵게**, 값이 여러 개거나 항목을 나열할 땐
-   `- ` 글머리 목록을 쓴다. 셀 주소(예: 원가현황!D6)는 `인라인 코드`로 감싼다.
-7. 답이 짧고 단순하면(값 하나만 묻는 질문 등) 소제목 없이 바로 답한다.
-   답이 여러 구간으로 나뉠 만큼 복잡하면(여러 표를 비교하거나, 여러 항목을 각각
-   설명하는 경우 등) `### 소제목`으로 구간을 나눠서 구조화한다. 소제목은 짧고
-   명확하게(예: "### 원가현황 기준", "### 경영요약 기준").
-   과한 서식(표, 코드블록)은 쓰지 않는다 — 소제목·굵게·목록·인라인 코드 네 가지만.
+5-1. 값이 0~1 사이의 소수이고 컬럼 이름에 '률'·'율'·'비율'이 들어가면(집행률 등),
+   100을 곱해 %로 보여준다(예: 0.365 -> 36.5%). 이것도 표기만 바꾸는 것이지
+   값을 지어내는 게 아니다.
+6. 마크다운으로 답한다: 핵심 숫자·값은 **굵게**, 셀 주소(예: 원가현황!D6)는
+   `인라인 코드`로 감싼다.
+6-1. **[조회 결과]에 항목(행)이 여러 개 있으면 — 예를 들어 프로젝트별로 값을 하나씩
+   나열하는 경우 — 문장이나 글머리 목록 대신 반드시 마크다운 표 하나로 만든다:**
+   첫 줄은 `| 이름표 | 값 | 셀 |` 헤더, 둘째 줄은 `| --- | --- | --- |` 구분선,
+   그다음부터 데이터 행. 첫 컬럼엔 이름표(프로젝트명 등), 둘째 컬럼엔 실제 값,
+   **셋째 컬럼엔 근거 셀 주소를 인라인 코드로** 넣는다(규칙 4의 "근거 셀 포함"은
+   이 표의 세 번째 컬럼으로 충족된다). 표 위에 한 줄 설명만 붙이고, **표 아래에
+   같은 내용을 문장이나 목록으로 또 반복하지 않는다** — 표 하나로 끝낸다.
+   예:
+   | 프로젝트 | 집행률 | 셀 |
+   | --- | --- | --- |
+   | 울산 정유 플랜트 | 36.5% | `원가현황!G6` |
+   | 서산 석유화학 | 43.6% | `원가현황!G7` |
+7. 값 하나만 묻는 단순한 질문엔 소제목 없이 바로 답한다. 답이 여러 구간으로
+   나뉠 만큼 복잡하면(여러 표를 비교하는 경우 등) `### 소제목`으로 나눈다.
+   소제목은 짧고 명확하게(예: "### 원가현황 기준", "### 경영요약 기준").
 
 질문: {question}
 [조회 결과]: {context}
@@ -227,6 +260,17 @@ def _column_names(sid):
         {"sid": sid},
     )
     return sorted({r["name"] for r in rows if r.get("name")})
+
+
+def _table_titles(sid):
+    """이 파일(sid)에 실제로 존재하는 Table 제목(title 없으면 range) 전체 목록.
+    질문에 없는 표 이름을 GPT가 지어내서 Table 필터에 넣는 문제가 있었음
+    (예: "전체 프로젝트 집행률"의 "프로젝트"를 표 이름으로 착각)."""
+    rows = _plain_graph().query(
+        "MATCH (t:Table {sid: $sid}) RETURN coalesce(t.title, t.range) AS title",
+        {"sid": sid},
+    )
+    return sorted({r["title"] for r in rows if r.get("title")})
 
 
 def _scoped_graph(sid):
@@ -403,7 +447,8 @@ def ask(sid, question):
     from langchain_openai import ChatOpenAI
 
     columns = _column_names(sid)
-    cypher_prompt = _CYPHER_PROMPT_TEMPLATE.partial(columns=", ".join(columns))
+    tables = _table_titles(sid)
+    cypher_prompt = _CYPHER_PROMPT_TEMPLATE.partial(columns=", ".join(columns), tables=", ".join(tables))
 
     chain = GraphCypherQAChain.from_llm(
         ChatOpenAI(model=model_name(), temperature=0),
