@@ -237,7 +237,8 @@ code, .mono { font-family: var(--mono); }
 .pane-tab.active { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 
 /* 챗봇 패널 */
-.chatpanel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 16px 22px; }
+.chatpanel { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 16px 22px;
+  background: var(--panel); }
 .chat-msgs { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
   padding-bottom: 12px; }
 .chat-msg { max-width: 85%; font-size: 13px; line-height: 1.85; }
@@ -245,7 +246,7 @@ code, .mono { font-family: var(--mono); }
    그래도 답변이라는 느낌이 나게 위아래·양옆에 여백을 넉넉히 준다. */
 .chat-msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--ink);
   padding: 10px 16px; border-radius: 20px; }
-.chat-msg.bot { align-self: stretch; max-width: 100%; background: transparent; padding: 14px 4px; }
+.chat-msg.bot { align-self: stretch; max-width: 100%; background: transparent; padding: 14px 16px; }
 .chat-msg.bot.loading { color: var(--muted); }
 .chat-msg.bot.err { color: #b25b00; background: #fff7ef; border-radius: 12px; padding: 10px 13px; }
 .chat-inputrow { flex: 0 0 auto; }
