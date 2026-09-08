@@ -63,8 +63,10 @@ _CYPHER_PROMPT_TEMPLATE = PromptTemplate.from_template("""\
   한다. 질문에 나온 단어(예: "전체 프로젝트 집행률"의 "프로젝트")를 표 이름으로 함부로
   추측해서 Table 필터를 넣지 않는다 — 그 단어가 위 Table 목록에 없으면 표 이름이 아니다.
   표 이름이 질문에 없으면 Table 필터 없이 Column/Cell만으로 찾는다.
-- 텍스트 값(value, name, title)을 비교할 때는 '=' 대신 CONTAINS를 쓰고, 대소문자·띄어쓰기 차이를 무시하려면
-  toLower(replace(toString(x), ' ', '')) CONTAINS toLower(replace('질문의 값', ' ', '')) 형태로 짠다.
+- 텍스트 값(value, name, title)을 비교할 때는 '=' 대신 CONTAINS를 쓰고, 대소문자·띄어쓰기·
+  하이픈 차이를 무시하려면
+  toLower(replace(replace(toString(x), ' ', ''), '-', '')) CONTAINS toLower(replace(replace('질문의 값', ' ', ''), '-', ''))
+  형태로 짠다(예: 질문은 "P2403"인데 실제 값은 "P-2403"처럼 하이픈 유무가 다를 수 있다).
   value 속성은 숫자일 수도 있으니 항상 toString()으로 먼저 문자열로 바꾼다.
 - 검색어가 여러 단어이고 실제 값엔 그 사이에 다른 단어가 더 끼어있을 수 있다(예: 질문은
   "여수 터미널"인데 실제 값은 "여수 LNG 터미널" — 중간에 "LNG"가 껴서 통째로는 CONTAINS가
@@ -87,7 +89,7 @@ _CYPHER_PROMPT_TEMPLATE = PromptTemplate.from_template("""\
 예시 질문 1 (알려진 값이 어느 컬럼 값인지 질문에 명시된 경우): "프로젝트코드 P-9000의 담당자는?"
 예시 Cypher:
 MATCH (codeCol:Column {{name:'프로젝트코드'}})-[:HAS_VALUE]->(codeCell:Cell)
-WHERE toLower(replace(toString(codeCell.value), ' ', '')) CONTAINS toLower(replace('P-9000', ' ', ''))
+WHERE toLower(replace(replace(toString(codeCell.value), ' ', ''), '-', '')) CONTAINS toLower(replace(replace('P-9000', ' ', ''), '-', ''))
 WITH codeCell
 MATCH (codeCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(targetCol:Column {{name:'담당자'}})
 RETURN targetCell.value AS 값, targetCell.name AS 셀
@@ -96,7 +98,7 @@ RETURN targetCell.value AS 값, targetCell.name AS 셀
 컬럼 제약 없이 값 자체로 셀을 먼저 찾는다): "동서기업의 담당자는?"
 예시 Cypher:
 MATCH (anchorCell:Cell)
-WHERE toLower(replace(toString(anchorCell.value), ' ', '')) CONTAINS toLower(replace('동서기업', ' ', ''))
+WHERE toLower(replace(replace(toString(anchorCell.value), ' ', ''), '-', '')) CONTAINS toLower(replace(replace('동서기업', ' ', ''), '-', ''))
 WITH anchorCell
 MATCH (anchorCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(targetCol:Column {{name:'담당자'}})
 RETURN targetCell.value AS 값, targetCell.name AS 셀
@@ -107,10 +109,10 @@ Table로 먼저 범위를 좁히고 그 안에서만 코드도 찾고 답도 찾
 "원가현황 테이블에서 P-9000의 담당자는?"
 예시 Cypher:
 MATCH (t:Table)
-WHERE toLower(replace(toString(t.title), ' ', '')) CONTAINS toLower(replace('원가현황', ' ', ''))
+WHERE toLower(replace(replace(toString(t.title), ' ', ''), '-', '')) CONTAINS toLower(replace(replace('원가현황', ' ', ''), '-', ''))
 WITH t
 MATCH (t)-[:HAS_COLUMN]->(codeCol:Column {{name:'프로젝트코드'}})-[:HAS_VALUE]->(codeCell:Cell)
-WHERE toLower(replace(toString(codeCell.value), ' ', '')) CONTAINS toLower(replace('P-9000', ' ', ''))
+WHERE toLower(replace(replace(toString(codeCell.value), ' ', ''), '-', '')) CONTAINS toLower(replace(replace('P-9000', ' ', ''), '-', ''))
 WITH t, codeCell
 MATCH (t)-[:HAS_ROW]->(row:Row)-[:HAS_CELL]->(codeCell)
 MATCH (row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'담당자'}})
@@ -121,7 +123,7 @@ RETURN targetCell.value AS 값, targetCell.name AS 셀
 "집행률"을 그대로 쓴다): "온산의 예산 집행률을 알려줘"
 예시 Cypher:
 MATCH (anchorCell:Cell)
-WHERE toLower(replace(toString(anchorCell.value), ' ', '')) CONTAINS toLower(replace('온산', ' ', ''))
+WHERE toLower(replace(replace(toString(anchorCell.value), ' ', ''), '-', '')) CONTAINS toLower(replace(replace('온산', ' ', ''), '-', ''))
 WITH anchorCell
 MATCH (anchorCell)<-[:HAS_CELL]-(row:Row)-[:HAS_CELL]->(targetCell:Cell)<-[:HAS_VALUE]-(:Column {{name:'집행률'}})
 RETURN targetCell.value AS 값, targetCell.name AS 셀
